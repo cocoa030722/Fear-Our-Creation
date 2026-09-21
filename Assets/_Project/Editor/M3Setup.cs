@@ -22,9 +22,9 @@ namespace Game.Editor
         const string SpearGruntDataPath = EnemyDir + "/SpearGrunt.asset";
         const string ThrowerDataPath = EnemyDir + "/ThornThrower.asset";
         const string GrenadierDataPath = EnemyDir + "/Grenadier.asset";
-        const string SpearGruntPrefabPath = Root + "/Prefabs/Enemies/SpearGrunt.prefab";
-        const string ThrowerPrefabPath = Root + "/Prefabs/Enemies/ThornThrower.prefab";
-        const string GrenadierPrefabPath = Root + "/Prefabs/Enemies/Grenadier.prefab";
+        internal const string SpearGruntPrefabPath = Root + "/Prefabs/Enemies/SpearGrunt.prefab";
+        internal const string ThrowerPrefabPath = Root + "/Prefabs/Enemies/ThornThrower.prefab";
+        internal const string GrenadierPrefabPath = Root + "/Prefabs/Enemies/Grenadier.prefab";
         const string ProjectilePrefabPath = Root + "/Prefabs/Projectiles/Projectile.prefab";
         const string ThornWeaponPath = Root + "/Data/Weapons/ThrownThorn.asset";
         const string BombWeaponPath = Root + "/Data/Weapons/BombShell.asset";
@@ -192,15 +192,15 @@ namespace Game.Editor
             M2Setup.SetBuildScenes();
         }
 
-        static void CreateWall(string name, Sprite square, Material unlit, Vector2 pos, Vector2 size)
+        internal static void CreateWall(string name, Sprite square, Material unlit, Vector2 pos, Vector2 size)
         {
             var wall = M1Setup.CreateSprite(name, square, unlit, PlaceholderPalette.LabObject, pos, size, Layers.Wall);
             wall.AddComponent<BoxCollider2D>().size = Vector2.one;
         }
 
-        static void PlaceEnemy(GameObject prefab, string name, Vector2 pos, float angleZ) => PlaceGrunt(prefab, name, pos, angleZ);
+        internal static void PlaceEnemy(GameObject prefab, string name, Vector2 pos, float angleZ) => PlaceGrunt(prefab, name, pos, angleZ);
 
-        static void PlaceGrunt(GameObject prefab, string name, Vector2 pos, float angleZ, params Vector2[] patrol)
+        internal static void PlaceGrunt(GameObject prefab, string name, Vector2 pos, float angleZ, params Vector2[] patrol)
         {
             var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
             go.name = name;

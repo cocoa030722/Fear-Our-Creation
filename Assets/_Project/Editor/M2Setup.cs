@@ -292,13 +292,13 @@ namespace Game.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        /// <summary>빌드 씬 목록: 최신 마일스톤 샌드박스가 먼저(존재하는 것만).</summary>
+        /// <summary>빌드 씬 목록: 스테이지가 먼저, 그다음 최신 마일스톤 샌드박스 순(존재하는 것만).</summary>
         internal static void SetBuildScenes()
         {
             var list = new System.Collections.Generic.List<EditorBuildSettingsScene>();
-            foreach (var name in new[] { "M3", "M2", "M1", "M0" })
+            foreach (var file in new[] { "Stage1", "Stage2", "M3_Sandbox", "M2_Sandbox", "M1_Sandbox", "M0_Sandbox" })
             {
-                string path = $"{Root}/Scenes/{name}_Sandbox.unity";
+                string path = $"{Root}/Scenes/{file}.unity";
                 if (System.IO.File.Exists(path)) list.Add(new EditorBuildSettingsScene(path, true));
             }
             EditorBuildSettings.scenes = list.ToArray();

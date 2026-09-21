@@ -11,6 +11,9 @@ namespace Game.Player
         [SerializeField] PlayerConfig config;
         [SerializeField] WeaponHolder weapons;
 
+        /// <summary>연출/통화/클리어 중 이동·공격·습득 입력을 막는다(조준은 허용). 재시작은 RestartController가 별도로 받는다.</summary>
+        public bool ControlLocked { get; set; }
+
         Rigidbody2D _rb;
         PlayerHealth _health;
         Camera _camera;
@@ -39,6 +42,11 @@ namespace Game.Player
 
             _moveInput = Vector2.ClampMagnitude(GameInput.Instance.Move.ReadValue<Vector2>(), 1f);
             Aim();
+            if (ControlLocked)
+            {
+                _moveInput = Vector2.zero;
+                return;
+            }
             weapons.HandleAttackInput(GameInput.Instance.Attack.WasPressedThisFrame(), GameInput.Instance.Attack.IsPressed());
             if (GameInput.Instance.Interact.WasPressedThisFrame()) weapons.TryInteract();
         }

@@ -13,6 +13,9 @@ namespace Game.Core
         /// <summary>이번 씬 로드가 R키 재시작으로 인한 것인지. 무전투 연출 스킵 판단에 쓴다.</summary>
         public static bool IsRestart { get; private set; }
 
+        /// <summary>현재 로드된 씬이 R키 재시작으로 열린 것인지. Begin() 이후에도 씬이 끝날 때까지 유지된다(연출 스킵 판단용).</summary>
+        public static bool LoadedByRestart { get; private set; }
+
         public static bool HasSnapshot => _snapshot != null;
         public static PlayerLoadout Snapshot => _snapshot;
 
@@ -21,12 +24,14 @@ namespace Game.Core
         {
             _snapshot = null;
             IsRestart = false;
+            LoadedByRestart = false;
             PlayerLoadout.Current = new PlayerLoadout();
         }
 
         /// <summary>맵 진입 시점에 한 번 호출. 재시작이면 저장된 상태를 복원하고, 아니면 현재 상태를 캡처한다.</summary>
         public static void Begin()
         {
+            LoadedByRestart = IsRestart && _snapshot != null;
             if (IsRestart && _snapshot != null) Restore();
             else Capture();
             IsRestart = false;
