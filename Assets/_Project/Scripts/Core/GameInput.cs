@@ -16,7 +16,6 @@ namespace Game.Core
         public readonly InputAction Attack;
         public readonly InputAction Restart;
         public readonly InputAction Interact;
-        public readonly InputAction DebugKill;
 
         GameInput()
         {
@@ -31,14 +30,12 @@ namespace Game.Core
             Attack = new InputAction("Attack", InputActionType.Button, "<Mouse>/leftButton");
             Restart = new InputAction("Restart", InputActionType.Button, "<Keyboard>/r");
             Interact = new InputAction("Interact", InputActionType.Button, "<Keyboard>/space");
-            DebugKill = new InputAction("DebugKill", InputActionType.Button, "<Keyboard>/k");
 
             Move.Enable();
             Point.Enable();
             Attack.Enable();
             Restart.Enable();
             Interact.Enable();
-            DebugKill.Enable();
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

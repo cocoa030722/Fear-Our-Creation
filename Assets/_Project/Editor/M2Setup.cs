@@ -66,7 +66,7 @@ namespace Game.Editor
             Init(thorn, "thorn", "Thorn", WeaponKind.Thrown, d =>
             {
                 d.maxAmmo = 12; d.pickupAmmo = 6; d.stackable = true;
-                d.windupSeconds = 0f; d.intervalSeconds = 0.3f; // 투척 간격은 임시값
+                d.windupSeconds = 0f; d.intervalSeconds = 0.4f; // 기획 표: 투척 가시 발사 간격 0.4초
                 d.projectileSpeedInDiameters = 20f; d.hitRecoverChance = 0.5f; d.missRecoverChance = 1f;
                 d.bossDamage = 25f / 6f;
                 d.pickupColor = new Color32(0x5C, 0xC8, 0xC8, 0xFF);
@@ -292,14 +292,16 @@ namespace Game.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        /// <summary>빌드 씬 목록: 최신 마일스톤 샌드박스가 먼저(존재하는 것만).</summary>
         internal static void SetBuildScenes()
         {
-            EditorBuildSettings.scenes = new[]
+            var list = new System.Collections.Generic.List<EditorBuildSettingsScene>();
+            foreach (var name in new[] { "M3", "M2", "M1", "M0" })
             {
-                new EditorBuildSettingsScene(ScenePath, true),
-                new EditorBuildSettingsScene(Root + "/Scenes/M1_Sandbox.unity", true),
-                new EditorBuildSettingsScene(Root + "/Scenes/M0_Sandbox.unity", true),
-            };
+                string path = $"{Root}/Scenes/{name}_Sandbox.unity";
+                if (System.IO.File.Exists(path)) list.Add(new EditorBuildSettingsScene(path, true));
+            }
+            EditorBuildSettings.scenes = list.ToArray();
         }
 
         static T LoadOrCreate<T>(string path) where T : ScriptableObject

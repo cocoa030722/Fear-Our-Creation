@@ -20,12 +20,5 @@ namespace Game.Player
             if (body != null) body.color = deadColor;
             Died?.Invoke();
         }
-
-        void Update()
-        {
-            // 임시 디버그: K키로 플레이어 즉사. 적 공격이 들어오는 M3 이후 제거
-            if (!IsDead && GameInput.Instance.DebugKill.WasPressedThisFrame())
-                TakeHit(new HitInfo(HitSource.Environment, HitKind.Melee, transform.position, Vector2.zero));
-        }
     }
 }

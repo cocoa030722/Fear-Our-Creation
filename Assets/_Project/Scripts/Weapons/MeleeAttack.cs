@@ -7,7 +7,7 @@ namespace Game.Weapons
     /// <summary>
     /// 근접 공격(주먹/가시창). 클릭 → 발동 딜레이 → 그 시점의 위치/방향으로 판정을 재계산해 범위 내 대상을 타격한다.
     /// 부채꼴 각도가 0이면 몸 가장자리에서 앞으로 뻗는 직선 상자, 0보다 크면 부채꼴. 벽 뒤 대상은 WallQuery로 걸러낸다.
-    /// 무기 수치는 WeaponHolder가 SetWeapon으로 넘긴다.
+    /// 판정 자체는 MeleeHit(적과 공용)가 수행하고, 이 클래스는 입력 타이밍/범위 표시를 담당한다. 무기 수치는 WeaponHolder가 SetWeapon으로 넘긴다.
     /// </summary>
     public class MeleeAttack : MonoBehaviour
     {
@@ -21,7 +21,6 @@ namespace Game.Weapons
 
         const float BodyRadius = GameConstants.PlayerDiameter * 0.5f;
         const int SectorTextureSize = 256;
-        static readonly Collider2D[] Buffer = new Collider2D[16];
 
         WeaponData _data;
         Sprite _boxSprite;
@@ -152,45 +151,12 @@ namespace Game.Weapons
         void ResolveHit()
         {
             if (_data == null) return;
-            Vector2 origin = transform.position;
-            Vector2 forward = transform.up;
-            var filter = new ContactFilter2D { useLayerMask = true, layerMask = _targetMask, useTriggers = true };
-
-            int count;
-            if (IsArc)
-                count = Physics2D.OverlapCircle(origin, BodyRadius + Reach, filter, Buffer);
-            else
-            {
-                GetBox(out var center, out var size, out var angle);
-                count = Physics2D.OverlapBox(center, size, angle, filter, Buffer);
-            }
-
-            float halfArc = _data.arcDegrees * 0.5f;
-            for (int i = 0; i < count; i++)
-            {
-                var col = Buffer[i];
-                if (!col.TryGetComponent<IDamageable>(out var target) || target.IsDead) continue;
-
-                Vector2 point = col.ClosestPoint(origin);
-                if (IsArc)
-                {
-                    Vector2 to = point - origin;
-                    // 몸에 딱 붙은 경우(거의 0)는 각도 계산이 무의미하므로 통과
-                    if (to.sqrMagnitude > 0.0001f && Vector2.Angle(forward, to) > halfArc) continue;
-                }
-                if (WallQuery.IsBlocked(origin, point)) continue;
-
-                target.TakeHit(new HitInfo(HitSource.Player, HitKind.Melee, point, forward));
-            }
+            MeleeHit.Strike(transform.position, transform.up, BodyRadius, _data, _targetMask, HitSource.Player);
         }
 
         void GetBox(out Vector2 center, out Vector2 size, out float angle)
         {
-            Vector2 forward = transform.up;
-            // 몸 가장자리(BodyRadius)부터 reach만큼 뻗는 상자
-            center = (Vector2)transform.position + forward * (BodyRadius + Reach * 0.5f);
-            size = new Vector2(Width, Reach); // 로컬 +Y가 전방이므로 세로가 사거리
-            angle = transform.eulerAngles.z;
+            MeleeHit.GetBox(transform.position, transform.up, BodyRadius, _data, out center, out size, out angle);
         }
 
         void OnDrawGizmosSelected()

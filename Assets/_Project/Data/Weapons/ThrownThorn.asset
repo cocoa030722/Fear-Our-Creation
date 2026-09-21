@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Thorn
   kind: 1
   windupSeconds: 0
-  intervalSeconds: 0.3
+  intervalSeconds: 0.4
   pickupColor: {r: 0.36078432, g: 0.78431374, b: 0.78431374, a: 1}
   maxAmmo: 12
   pickupAmmo: 6
