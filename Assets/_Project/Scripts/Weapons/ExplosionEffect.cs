@@ -19,11 +19,7 @@ namespace Game.Weapons
         public static void Detonate(WeaponData data, Vector2 center, HitSource source, ExplosionEffect effectPrefab)
         {
             float diameter = GameConstants.FromPlayerDiameters(data.explosionDiameters);
-            if (effectPrefab != null)
-            {
-                var fx = Instantiate(effectPrefab, center, Quaternion.identity);
-                fx.Play(diameter);
-            }
+            Show(effectPrefab, center, diameter);
 
             int mask = source == HitSource.Player
                 ? Layers.Mask(Layers.Enemy, Layers.Destructible)
@@ -42,9 +38,19 @@ namespace Game.Weapons
             }
         }
 
-        void Play(float worldDiameter)
+        /// <summary>판정 없이 표시만 생성한다. color/lifetime은 프리팹 값을 덮어쓸 때만 지정(폭발 오브젝트용).</summary>
+        public static void Show(ExplosionEffect prefab, Vector2 center, float worldDiameter, Color? color = null, float lifetime = 0f)
+        {
+            if (prefab == null) return;
+            var fx = Instantiate(prefab, center, Quaternion.identity);
+            fx.Play(worldDiameter, color, lifetime);
+        }
+
+        void Play(float worldDiameter, Color? color = null, float lifetime = 0f)
         {
             transform.localScale = new Vector3(worldDiameter, worldDiameter, 1f);
+            if (body != null && color.HasValue) body.color = color.Value;
+            if (lifetime > 0f) lifetimeSeconds = lifetime;
             if (body != null) _startColor = body.color;
         }
 
