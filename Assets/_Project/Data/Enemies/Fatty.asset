@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d7fb71f576476e4887741979d48877b, type: 3}
+  m_Name: Fatty
+  m_EditorClassIdentifier: Game.Runtime::Game.Enemies.EnemyData
+  id: fatty
+  displayName: Fatty
+  playerConfig: {fileID: 11400000, guid: b38e43b33ef550249b3294957a5fad4e, type: 2}
+  bodyDiameterInPlayerDiameters: 1.5
+  moveSpeedMultiplier: 0.8
+  patrolSpeedMultiplier: 0.4
+  turnDegreesPerSecond: 720
+  sightAngleDegrees: 90
+  sightRangeInScreenWidths: 0.5
+  alertSecondsAfterLostSight: 3
+  weapon: {fileID: 11400000, guid: 32e27f9ccd804714a9658842ad9805af, type: 2}
+  attackWindupSeconds: 0.2
+  attackIntervalSeconds: 1
+  projectileSpeedMultiplier: 2.5
+  engageDistanceInPlayerDiameters: 6
+  deathCountdownSeconds: 2
+  countdownReductionPerHit: 0.2
+  lootWeapon: {fileID: 11400000, guid: 32e27f9ccd804714a9658842ad9805af, type: 2}
+  lootAmmo: 0

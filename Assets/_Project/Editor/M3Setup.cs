@@ -89,7 +89,7 @@ namespace Game.Editor
             return true;
         }
 
-        static void InitEnemy(string path, string id, string displayName, PlayerConfig config, System.Action<EnemyData> setValues)
+        internal static void InitEnemy(string path, string id, string displayName, PlayerConfig config, System.Action<EnemyData> setValues)
         {
             var data = AssetDatabase.LoadAssetAtPath<EnemyData>(path);
             if (data == null)
@@ -105,7 +105,7 @@ namespace Game.Editor
             EditorUtility.SetDirty(data);
         }
 
-        static void EnsureEnemyPrefab(string prefabPath, string dataPath, string name, Color facingColor, bool ranged)
+        internal static void EnsureEnemyPrefab(string prefabPath, string dataPath, string name, Color facingColor, bool ranged)
         {
             if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) != null) return;
             var circle = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Sprites/Circle.png");
@@ -222,7 +222,7 @@ namespace Game.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        static void PlacePickup(WeaponData data, Vector2 position)
+        internal static void PlacePickup(WeaponData data, Vector2 position)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PickupPrefabPath);
             var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
