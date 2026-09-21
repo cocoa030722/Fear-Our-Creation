@@ -27,16 +27,38 @@ namespace Game.Cutscene
         [Tooltip("연출 시작 전 대기(초)")]
         [SerializeField] float startDelaySeconds = 0.6f;
 
+        [Header("맵 종료 연출용(맵 시작 연출이면 비워 둔다)")]
+        [Tooltip("0 초과면 맵 시작이 아니라 플레이어가 이 반경(월드 유닛) 안에 들어왔을 때 재생한다")]
+        [SerializeField] float triggerRadius;
+        [Tooltip("통화가 끝난 뒤 발동할 종점. 종료 통화는 한 번 본 뒤에는 생략하고 바로 발동한다")]
+        [SerializeField] Game.World.StageGoal goalAfter;
+
+        string SeenId => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name + "/" + name;
+
         Line _current;
         bool _showing;
 
         IEnumerator Start()
         {
-            if (SnapshotSystem.LoadedByRestart) yield break;
+            bool atEnd = triggerRadius > 0f;
+            if (!atEnd && SnapshotSystem.LoadedByRestart) yield break;
 
             var player = FindAnyObjectByType<PlayerController>();
-            if (player != null) player.ControlLocked = true;
+            if (atEnd)
+            {
+                var health = player != null ? player.GetComponent<PlayerHealth>() : null;
+                while (player == null || (health != null && health.IsDead)
+                       || Vector2.Distance(player.transform.position, transform.position) > triggerRadius)
+                    yield return null;
+                // 맵 종료 통화: 처음 도달했을 때는 재시작 여부와 무관하게 반드시 보여 주고, 본 뒤에는 생략한다
+                if (SnapshotSystem.HasSeenCutscene(SeenId))
+                {
+                    if (goalAfter != null) goalAfter.Trigger();
+                    yield break;
+                }
+            }
 
+            if (player != null) player.ControlLocked = true;
             yield return new WaitForSeconds(startDelaySeconds);
             foreach (var line in lines)
             {
@@ -45,7 +67,9 @@ namespace Game.Cutscene
                 yield return new WaitForSeconds(line.seconds);
             }
             _showing = false;
-            if (player != null) player.ControlLocked = false;
+            if (atEnd) SnapshotSystem.MarkCutsceneSeen(SeenId);
+            if (goalAfter != null) goalAfter.Trigger(); // 종점이 조작 잠금을 이어받는다
+            else if (player != null) player.ControlLocked = false;
         }
 
         void OnGUI()

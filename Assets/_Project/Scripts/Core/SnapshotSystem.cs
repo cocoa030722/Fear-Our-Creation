@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Game.Core
@@ -9,12 +10,17 @@ namespace Game.Core
     public static class SnapshotSystem
     {
         static PlayerLoadout _snapshot;
+        static readonly HashSet<string> _seenCutscenes = new HashSet<string>();
 
         /// <summary>이번 씬 로드가 R키 재시작으로 인한 것인지. 무전투 연출 스킵 판단에 쓴다.</summary>
         public static bool IsRestart { get; private set; }
 
         /// <summary>현재 로드된 씬이 R키 재시작으로 열린 것인지. Begin() 이후에도 씬이 끝날 때까지 유지된다(연출 스킵 판단용).</summary>
         public static bool LoadedByRestart { get; private set; }
+
+        /// <summary>맵 종료 연출처럼 "한 번은 반드시 보고, 본 뒤에는 재시작해도 생략"하는 연출의 시청 기록(실행 중에만 유지).</summary>
+        public static bool HasSeenCutscene(string id) => _seenCutscenes.Contains(id);
+        public static void MarkCutsceneSeen(string id) => _seenCutscenes.Add(id);
 
         public static bool HasSnapshot => _snapshot != null;
         public static PlayerLoadout Snapshot => _snapshot;
@@ -25,6 +31,7 @@ namespace Game.Core
             _snapshot = null;
             IsRestart = false;
             LoadedByRestart = false;
+            _seenCutscenes.Clear();
             PlayerLoadout.Current = new PlayerLoadout();
         }
 

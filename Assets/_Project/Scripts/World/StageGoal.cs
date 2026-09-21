@@ -20,21 +20,33 @@ namespace Game.World
         [Tooltip("도착 후 다음 씬 로드까지의 시간(초)")]
         [SerializeField] float delaySeconds = 1f;
 
+        [Tooltip("켜면 영역 진입으로 발동하지 않고 Trigger()로만 발동한다(맵 종료 통화 연출 뒤 발동용)")]
+        [SerializeField] bool manualTrigger;
+
         bool _reached;
         float _loadAt;
         int _playerMask;
 
         void Awake() => _playerMask = Layers.Mask(Layers.Player);
 
+        /// <summary>종료 연출이 끝난 뒤 호출한다. 이미 발동했으면 무시.</summary>
+        public void Trigger()
+        {
+            if (_reached) return;
+            _reached = true;
+            _loadAt = Time.time + delaySeconds;
+            var controller = FindAnyObjectByType<PlayerController>();
+            if (controller != null) controller.ControlLocked = true;
+        }
+
         void Update()
         {
             if (!_reached)
             {
+                if (manualTrigger) return;
                 var col = Physics2D.OverlapBox(transform.position, size, 0f, _playerMask);
                 if (col == null || !col.TryGetComponent<PlayerHealth>(out var health) || health.IsDead) return;
-                _reached = true;
-                _loadAt = Time.time + delaySeconds;
-                if (col.TryGetComponent<PlayerController>(out var controller)) controller.ControlLocked = true;
+                Trigger();
                 return;
             }
             if (!string.IsNullOrEmpty(nextSceneName) && Time.time >= _loadAt) SceneManager.LoadScene(nextSceneName);

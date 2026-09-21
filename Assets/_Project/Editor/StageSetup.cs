@@ -9,7 +9,7 @@ using UnityEngine;
 namespace Game.Editor
 {
     /// <summary>
-    /// 스테이지 씬 구성(1~2스테이지)과 벽 계열 프리팹(벽/화분/제어 패널). 여러 번 실행해도 안전(씬은 매번 새로 만든다).
+    /// 스테이지 씬 구성(1~3스테이지)과 벽 계열 프리팹(벽/화분/제어 패널). 여러 번 실행해도 안전(씬은 매번 새로 만든다).
     /// 벽 규칙은 Wall 레이어 하나로 통일되므로 화분·제어 패널도 프리팹의 겉모습만 다르다.
     /// 레이아웃을 바꿀 때는 이 스크립트를 수정한다(에디터에서 직접 고친 씬은 재실행 시 사라짐).
     /// </summary>
@@ -22,22 +22,24 @@ namespace Game.Editor
         const string PanelPrefabPath = PropDir + "/ControlPanel.prefab";
         internal const string Stage1Path = Root + "/Scenes/Stage1.unity";
         internal const string Stage2Path = Root + "/Scenes/Stage2.unity";
+        internal const string Stage3Path = Root + "/Scenes/Stage3.unity";
 
         static readonly Color PlanterColor = new Color32(0x3F, 0xBF, 0x9F, 0xFF);
         static readonly Color PanelColor = new Color32(0x0E, 0x7C, 0x7C, 0xFF);
         static readonly Color TextColor = new Color32(0x2B, 0x3A, 0x42, 0xFF);
 
-        [MenuItem("Tools/Fear/Stage 1-2 Setup")]
+        [MenuItem("Tools/Fear/Stage 1-3 Setup")]
         public static void Run()
         {
-            if (!M3Setup.EnsureAssets()) return;
+            if (!M4Setup.EnsureAssets()) return;
             EnsurePropPrefabs();
             BuildStage1();
             BuildStage2();
+            BuildStage3();
             M2Setup.SetBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[Stage] 셋업 완료: Stage1, Stage2");
+            Debug.Log("[Stage] 셋업 완료: Stage1, Stage2, Stage3");
         }
 
         // ---- 프리팹 ----------------------------------------------------------------------------------------
@@ -202,11 +204,117 @@ namespace Game.Editor
             M3Setup.PlaceEnemy(thrower, "Thrower Far", new Vector2(10f, -5f), 90f);
             M3Setup.PlaceEnemy(grunt, "Grunt Elevator Guard", new Vector2(12f, 2f), 90f);
 
-            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "Stage 2 Clear (M3 빌드의 끝)", "", square, unlit);
+            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "엘리베이터가 고장났다 - 계단으로 내려간다", "Stage3", square, unlit);
 
             Hint(new Vector2(-6f, 0f), 4.5f, "투척병의 가시는 벽과 화분에 막힙니다. 엄폐물 뒤로 붙어서 접근하세요");
 
+            // 복선 소품: 5~6스테이지의 비상 소각/지하터널 개연성을 위한 벽 게시물
+            Notice(new Vector2(-4f, 8.55f), "[게시물] 비상 소각 시스템 점검 안내 - 실험체 유출 시 최하층을 포함한 시설 전체를 소각해 격리합니다. 직원은 지시에 따라 대피하십시오.", square, unlit);
+            Notice(new Vector2(8f, -8.55f), "[안내문] 지하터널 인증 절차 - 유사시 퇴각로 개방은 소장 인증을 거쳐야 합니다. 무단 개방을 금지합니다.", square, unlit);
+
             EditorSceneManager.SaveScene(scene, Stage2Path);
+        }
+
+        // ---- 3스테이지 -------------------------------------------------------------------------------------
+
+        static void BuildStage3()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var player = M2Setup.CreateRig();
+            player.transform.position = new Vector3(-13f, 0f, 0f); // 계단 위
+
+            var wall = Load(WallPrefabPath);
+            var planter = Load(PlanterPrefabPath);
+            new GameObject("NavGrid").AddComponent<NavGrid>();
+            Boundary(wall);
+
+            var square = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Sprites/Square.png");
+            var unlit = AssetDatabase.LoadAssetAtPath<Material>(Root + "/Art/Materials/SpriteUnlit.mat");
+            var catalog = AssetDatabase.LoadAssetAtPath<Game.Weapons.WeaponCatalog>(Root + "/Data/Weapons/WeaponCatalog.asset");
+
+            // 계단(좌측): 위/아래 벽 + 오른쪽 벽(문틈 y ±1.25). 계단 그림은 충돌 없는 장식
+            Prop(wall, "Stairs Wall Top", new Vector2(-11.5f, 4.25f), new Vector2(7f, 0.5f));
+            Prop(wall, "Stairs Wall Bottom", new Vector2(-11.5f, -4.25f), new Vector2(7f, 0.5f));
+            Prop(wall, "Stairs Wall Upper", new Vector2(-8.25f, 2.75f), new Vector2(0.5f, 3f));
+            Prop(wall, "Stairs Wall Lower", new Vector2(-8.25f, -2.75f), new Vector2(0.5f, 3f));
+            for (int i = 0; i < 6; i++)
+            {
+                var step = M1Setup.CreateSprite($"Stair Step {i + 1}", square, unlit, new Color32(0x8F, 0xD6, 0xD6, 0xFF),
+                    new Vector2(-14.2f + i * 0.9f, 0f), new Vector2(0.5f, 7f), 0);
+                step.GetComponent<SpriteRenderer>().sortingOrder = -2;
+            }
+
+            // 복도: 엄폐 화분과 첫 전투(창병 순찰, 투척병, 뚱보 1명 = 카운트다운 학습)
+            foreach (var (name, pos) in new (string, Vector2)[]
+            {
+                ("Planter A", new Vector2(-5f, 3.5f)), ("Planter B", new Vector2(-5f, -3.5f)),
+                ("Planter C", new Vector2(-2f, 0f)), ("Planter D", new Vector2(0.5f, 5f)),
+                ("Planter E", new Vector2(0.5f, -5f)),
+            })
+                Prop(planter, name, pos, Vector2.one * 1.2f);
+
+            var grunt = Load(M3Setup.SpearGruntPrefabPath);
+            var thrower = Load(M3Setup.ThrowerPrefabPath);
+            var fatty = Load(M4Setup.FattyPrefabPath);
+            M3Setup.PlaceGrunt(grunt, "Grunt Hall Patrol", new Vector2(-3f, 7f), 0f, new Vector2(-3f, 7f), new Vector2(-3f, 4.5f));
+            M3Setup.PlaceEnemy(thrower, "Thrower Hall", new Vector2(1.5f, 0f), 90f);
+            M3Setup.PlaceEnemy(fatty, "Fatty Hall", new Vector2(-1f, -7f), 90f);
+
+            // 무기고(우측): 입구 문틈 y ±2. 안쪽 위 구석은 경비실(총소리를 들으면 몰려온다)
+            Prop(wall, "Armory Wall Upper", new Vector2(3.75f, 5.5f), new Vector2(0.5f, 7f));
+            Prop(wall, "Armory Wall Lower", new Vector2(3.75f, -5.5f), new Vector2(0.5f, 7f));
+            Prop(wall, "Guard Room Wall", new Vector2(9f, 5f), new Vector2(6f, 0.5f));
+
+            // 권총(첫 사용): 무기고 입구 안쪽. 두 자루 = 탄창 32발
+            M3Setup.PlacePickup(catalog.Find("pistol"), new Vector2(5.5f, 1.2f));
+            M3Setup.PlacePickup(catalog.Find("pistol"), new Vector2(5.5f, -1.2f));
+
+            // 무기고 전투: 발사 어그로를 체험하도록 경비실/무기고 홀에 적을 나눠 배치
+            M3Setup.PlaceEnemy(grunt, "Grunt Armory 1", new Vector2(8f, -3f), 90f);
+            M3Setup.PlaceEnemy(grunt, "Grunt Armory 2", new Vector2(11f, -6.5f), 90f);
+            M3Setup.PlaceEnemy(grunt, "Grunt Guard Room", new Vector2(10f, 7.5f), 0f);      // 벽 너머: 총소리로만 반응
+            M3Setup.PlaceEnemy(fatty, "Fatty Armory", new Vector2(10.5f, -1f), 90f);
+            M3Setup.PlaceEnemy(thrower, "Thrower Armory", new Vector2(13f, 1f), 90f);
+
+            // 탄약 상자(환경 기믹): 뚱보와 투척병 곁에 두어 권총으로 쏴서 연쇄로 쓸어 낼 수 있게 한다
+            var crate = Load(M4Setup.AmmoCratePrefabPath);
+            M4Setup.PlaceProp(crate, "Ammo Crate 1", new Vector2(12f, -0.5f));
+            M4Setup.PlaceProp(crate, "Ammo Crate 2", new Vector2(12.8f, -2f));
+            M4Setup.PlaceProp(crate, "Ammo Crate 3", new Vector2(7f, -6f));
+
+            // 종점: 무기고 전화기. 근처에 가면 종료 통화 연출(재시작 시 생략) → 종점 발동
+            var phone = M1Setup.CreateSprite("Phone", square, unlit, PanelColor, new Vector2(13.2f, -7.8f), new Vector2(0.9f, 0.7f), 0);
+            AddLabel(phone.transform, "Phone");
+            var goalGo = M1Setup.CreateSprite("Armory Goal", square, unlit, PanelColor, new Vector2(13.2f, -7.8f), new Vector2(1.6f, 1.6f), 0);
+            goalGo.GetComponent<SpriteRenderer>().sortingOrder = -1;
+            var goal = goalGo.AddComponent<StageGoal>();
+            var goalSo = new SerializedObject(goal);
+            goalSo.FindProperty("nextSceneName").stringValue = "";
+            goalSo.FindProperty("message").stringValue = "Stage 3 Clear (M4 빌드의 끝)";
+            goalSo.FindProperty("manualTrigger").boolValue = true;
+            goalSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var call = new GameObject("Phone Call").AddComponent<PhoneCall>();
+            call.transform.position = new Vector2(13.2f, -7.8f);
+            var callSo = new SerializedObject(call);
+            callSo.FindProperty("triggerRadius").floatValue = 2.5f;
+            callSo.FindProperty("goalAfter").objectReferenceValue = goal;
+            callSo.ApplyModifiedPropertiesWithoutUndo();
+            SetLines(call, new (string, string, float)[]
+            {
+                ("소장", "무기고에 도착했군. 권총은 확보했나.", 3f),
+                ("소장", "비상 엘리베이터를 이용하게. 서두르게나.", 3.5f),
+                ("소장", "상황은 통제하에 있네.", 2.5f),
+            });
+
+            Hint(new Vector2(-13f, 0f), 4.5f, "엘리베이터가 고장났다. 계단으로 내려가 무기고까지 전진하세요");
+            Hint(new Vector2(4.5f, 0f), 3f, "무기고: 권총 위에서 스페이스. 좌클릭 누르면 연사, 총소리는 멀리 있는 적도 부릅니다\n노란 표식 상자는 폭발합니다 - 플레이어도 죽습니다");
+
+            // 복선 소품(3스테이지): 소각 시스템의 제어 위치와 터널 인증 절차
+            Notice(new Vector2(-4f, 8.55f), "[게시물] 지하터널 인증 절차 - 터널 개방은 소장 인증 후 최하층 제어반에서만 가능합니다.", square, unlit);
+            Notice(new Vector2(9f, -8.55f), "[안내문] 비상 소각 시스템 - 최하층 제어반에서 작동. 작동 시 시설 내 전 인원의 대피를 확인하십시오.", square, unlit);
+
+            EditorSceneManager.SaveScene(scene, Stage3Path);
         }
 
         // ---- 공용 ------------------------------------------------------------------------------------------
@@ -241,6 +349,22 @@ namespace Game.Editor
             var so = new SerializedObject(goal);
             so.FindProperty("nextSceneName").stringValue = nextScene;
             so.FindProperty("message").stringValue = message;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>벽 게시물(복선 소품): 충돌 없는 종이 그림 + 가까이 가면 문구를 띄운다(HintZone 재사용).</summary>
+        static void Notice(Vector2 pos, string text, Sprite square, Material unlit)
+        {
+            var paper = M1Setup.CreateSprite("Notice", square, unlit, new Color32(0xF2, 0xFA, 0xFA, 0xFF), pos, new Vector2(0.9f, 1.1f), 0);
+            paper.GetComponent<SpriteRenderer>().sortingOrder = -1;
+            var line = M1Setup.CreateSprite("Notice Line", square, unlit, new Color32(0x8F, 0xD6, 0xD6, 0xFF), Vector2.zero, new Vector2(0.6f, 0.08f), 0);
+            line.transform.SetParent(paper.transform, false);
+            line.transform.localScale = new Vector3(0.6f / 0.9f, 0.08f / 1.1f, 1f);
+            line.GetComponent<SpriteRenderer>().sortingOrder = 0;
+            var hint = paper.AddComponent<HintZone>();
+            var so = new SerializedObject(hint);
+            so.FindProperty("text").stringValue = text;
+            so.FindProperty("radius").floatValue = 2.5f;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
