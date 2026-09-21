@@ -47,6 +47,12 @@ namespace Game.Enemies
         [Tooltip("원거리: 이 거리(플레이어 지름의 배수) 이내로 다가오면 멈추고 발사한다. 기획에 수치 없음, 임시값")]
         public float engageDistanceInPlayerDiameters = 6f;
 
+        [Header("뚱보 카운트다운")]
+        [Tooltip("첫 피격 후 사망까지의 시간(초). 0이면 일반 적(1회 즉사). 기획: 뚱보 2초")]
+        public float deathCountdownSeconds;
+        [Tooltip("추가 피격마다 앞당겨지는 시간(초). 기획: 0.2")]
+        public float countdownReductionPerHit = 0.2f;
+
         [Header("노획")]
         [Tooltip("사망 시 떨어뜨리는 무기(없으면 비움)")]
         public WeaponData lootWeapon;
