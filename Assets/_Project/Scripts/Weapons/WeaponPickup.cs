@@ -10,9 +10,33 @@ namespace Game.Weapons
 
         [SerializeField] SpriteRenderer body;
 
+        const float RecoverRadius = 0.6f;
+
         TextMesh _label;
+        bool _autoRecover;
+        WeaponHolder _holder;
 
         void Start() => Refresh();
+
+        /// <summary>투척 가시 회수용으로 만든다: 같은 무기를 들고 있는 플레이어가 위를 지나가면 자동 습득(스페이스 교체와 분리).</summary>
+        public void MakeAutoRecover()
+        {
+            _autoRecover = true;
+            transform.localScale *= 0.6f;
+        }
+
+        void Update()
+        {
+            if (!_autoRecover || data == null) return;
+            if (_holder == null) _holder = FindAnyObjectByType<WeaponHolder>();
+            if (_holder == null || _holder.Current != data) return;
+            if (((Vector2)_holder.transform.position - (Vector2)transform.position).sqrMagnitude > RecoverRadius * RecoverRadius) return;
+
+            int added = _holder.TryAddAmmo(data, ammo);
+            if (added <= 0) return;
+            if (added >= ammo) Destroy(gameObject);
+            else SetAmmo(ammo - added);
+        }
 
         /// <summary>data/ammo에 맞춰 색과 라벨을 갱신한다.</summary>
         public void Refresh()
@@ -32,6 +56,7 @@ namespace Game.Weapons
             var go = new GameObject("Label");
             go.transform.SetParent(transform, false);
             go.transform.localPosition = new Vector3(0f, 0.75f, 0f);
+            go.transform.localScale = new Vector3(1f / transform.localScale.x, 1f / transform.localScale.y, 1f);
             _label = go.AddComponent<TextMesh>();
             _label.font = font;
             _label.fontSize = 48;

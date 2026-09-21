@@ -15,6 +15,7 @@ namespace Game.Weapons
         [SerializeField] WeaponData fist;
         [SerializeField] WeaponPickup pickupPrefab;
         [SerializeField] MeleeAttack melee;
+        [SerializeField] RangedAttack ranged;
         [Tooltip("발밑 픽업 탐색 반지름(월드 유닛)")]
         [SerializeField] float pickupReach = 0.6f;
         [SerializeField] bool showDebugHud = true;
@@ -39,16 +40,20 @@ namespace Game.Weapons
             else Equip(fist, 0);
         }
 
-        /// <summary>좌클릭. 현재 무기의 종류에 맞는 공격을 시도한다.</summary>
-        public bool TryAttack()
+        /// <summary>
+        /// 좌클릭 입력 처리. 권총은 누르고 있으면 연사(간격은 SO), 그 외 무기는 눌렀을 때 1회 공격한다.
+        /// </summary>
+        public bool HandleAttackInput(bool pressed, bool held)
         {
             if (Current == null) return false;
             switch (Current.kind)
             {
                 case WeaponKind.Melee:
-                    return melee.TryAttack();
-                default:
-                    return false; // 원거리 무기는 이후 커밋에서 연결
+                    return pressed && melee.TryAttack();
+                case WeaponKind.Gun:
+                    return held && ranged.TryFire(Current);
+                default: // 투척 가시, 폭탄알
+                    return pressed && ranged.TryFire(Current);
             }
         }
 

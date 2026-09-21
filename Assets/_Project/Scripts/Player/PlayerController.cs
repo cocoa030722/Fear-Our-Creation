@@ -39,7 +39,7 @@ namespace Game.Player
 
             _moveInput = Vector2.ClampMagnitude(GameInput.Instance.Move.ReadValue<Vector2>(), 1f);
             Aim();
-            if (GameInput.Instance.Attack.WasPressedThisFrame()) weapons.TryAttack();
+            weapons.HandleAttackInput(GameInput.Instance.Attack.WasPressedThisFrame(), GameInput.Instance.Attack.IsPressed());
             if (GameInput.Instance.Interact.WasPressedThisFrame()) weapons.TryInteract();
         }
 

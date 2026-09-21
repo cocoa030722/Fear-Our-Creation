@@ -21,6 +21,8 @@ namespace Game.Editor
         const string WeaponDir = Root + "/Data/Weapons";
         const string CatalogPath = WeaponDir + "/WeaponCatalog.asset";
         const string PickupPrefabPath = Root + "/Prefabs/Weapons/WeaponPickup.prefab";
+        const string ExplosionPrefabPath = Root + "/Prefabs/Projectiles/ExplosionEffect.prefab";
+        const string ProjectilePrefabPath = Root + "/Prefabs/Projectiles/Projectile.prefab";
         public const string PlayerConfigPath = Root + "/Data/PlayerConfig.asset";
 
         [MenuItem("Tools/Fear/M2 Setup")]
@@ -92,6 +94,7 @@ namespace Game.Editor
             EditorUtility.SetDirty(catalog);
 
             EnsurePickupPrefab();
+            EnsureProjectilePrefabs();
             AssetDatabase.SaveAssets();
             return true;
         }
@@ -122,6 +125,40 @@ namespace Game.Editor
             Object.DestroyImmediate(go);
         }
 
+        static void EnsureProjectilePrefabs()
+        {
+            var circle = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Sprites/Circle.png");
+            var unlit = AssetDatabase.LoadAssetAtPath<Material>(Root + "/Art/Materials/SpriteUnlit.mat");
+
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(ExplosionPrefabPath) == null)
+            {
+                // 폭발 표시: 노란 위험 표식, 반투명 원(지름은 Play에서 SO 수치로 맞춘다)
+                var color = PlaceholderPalette.Hazard;
+                color.a = 0.4f;
+                var fx = M1Setup.CreateSprite("ExplosionEffect", circle, unlit, color, Vector2.zero, Vector2.one, 0);
+                fx.GetComponent<SpriteRenderer>().sortingOrder = 3;
+                var effect = fx.AddComponent<ExplosionEffect>();
+                M1Setup.SetField(effect, "body", fx.GetComponent<SpriteRenderer>());
+                PrefabUtility.SaveAsPrefabAsset(fx, ExplosionPrefabPath);
+                Object.DestroyImmediate(fx);
+            }
+
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(ProjectilePrefabPath) == null)
+            {
+                // 루트는 이동 기준, 자식 Body가 무기별 크기/색을 받는다
+                var root = new GameObject("Projectile") { layer = Layers.Projectile };
+                var body = M1Setup.CreateSprite("Body", circle, unlit, PlaceholderPalette.LabObject, Vector2.zero, Vector2.one * 0.2f, Layers.Projectile);
+                body.transform.SetParent(root.transform, false);
+                body.GetComponent<SpriteRenderer>().sortingOrder = 2;
+                var proj = root.AddComponent<Projectile>();
+                M1Setup.SetField(proj, "body", body.GetComponent<SpriteRenderer>());
+                M1Setup.SetField(proj, "explosionPrefab", AssetDatabase.LoadAssetAtPath<GameObject>(ExplosionPrefabPath).GetComponent<ExplosionEffect>());
+                M1Setup.SetField(proj, "pickupPrefab", AssetDatabase.LoadAssetAtPath<GameObject>(PickupPrefabPath).GetComponent<WeaponPickup>());
+                PrefabUtility.SaveAsPrefabAsset(root, ProjectilePrefabPath);
+                Object.DestroyImmediate(root);
+            }
+        }
+
         static void BuildScene()
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -137,12 +174,25 @@ namespace Game.Editor
             M1Setup.CreateDummy("Dummy B", circle, unlit, new Vector2(4f, 1.5f));
             M1Setup.CreateDummy("Dummy C", circle, unlit, new Vector2(-4f, 2f));
             M1Setup.CreateDummy("Dummy Behind Wall", circle, unlit, new Vector2(0f, 4.2f));
+            // 원거리/폭발 테스트: 먼 더미 무리(폭발 지름 4배 안에 여러 개) + 벽 뒤 더미
+            M1Setup.CreateDummy("Far Dummy 1", circle, unlit, new Vector2(8f, -0.5f));
+            M1Setup.CreateDummy("Far Dummy 2", circle, unlit, new Vector2(8f, 0.8f));
+            M1Setup.CreateDummy("Far Dummy 3", circle, unlit, new Vector2(8.5f, 2.1f));
+            M1Setup.CreateDummy("Far Dummy Behind Wall", circle, unlit, new Vector2(-8f, 0f));
             var wall = M1Setup.CreateSprite("Wall", square, unlit, PlaceholderPalette.LabObject, new Vector2(0f, 3f), new Vector2(4f, 0.4f), Layers.Wall);
             wall.AddComponent<BoxCollider2D>().size = Vector2.one;
+            var wall2 = M1Setup.CreateSprite("Wall Side", square, unlit, PlaceholderPalette.LabObject, new Vector2(-6f, 0f), new Vector2(0.4f, 4f), Layers.Wall);
+            wall2.AddComponent<BoxCollider2D>().size = Vector2.one;
 
             // 무기 픽업(교체/드롭 테스트를 위해 같은 무기를 2개 이상 둔다)
             PlacePickup(catalog.Find("spear"), 0, new Vector2(-3f, -2f));
             PlacePickup(catalog.Find("spear"), 0, new Vector2(3f, -2f));
+            PlacePickup(catalog.Find("thorn"), 0, new Vector2(-6f, -2f));      // 6개 묶음
+            PlacePickup(catalog.Find("thorn"), 0, new Vector2(-6f, -3.5f));    // 합산 습득 테스트(상한 12)
+            PlacePickup(catalog.Find("bomb"), 0, new Vector2(6f, -2f));
+            PlacePickup(catalog.Find("bomb"), 0, new Vector2(6f, -3.5f));
+            PlacePickup(catalog.Find("pistol"), 0, new Vector2(0f, -3.5f));    // 16발 탄창
+            PlacePickup(catalog.Find("pistol"), 0, new Vector2(1.5f, -3.5f));  // 교체/잔량 유지 테스트
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             SetBuildScenes();
@@ -187,6 +237,7 @@ namespace Game.Editor
 
             var health = player.AddComponent<PlayerHealth>();
             var melee = player.AddComponent<MeleeAttack>();
+            var ranged = player.AddComponent<RangedAttack>();
             var holder = player.AddComponent<WeaponHolder>();
             var controller = player.AddComponent<PlayerController>();
             M1Setup.SetField(health, "body", player.GetComponent<SpriteRenderer>());
@@ -195,6 +246,9 @@ namespace Game.Editor
             M1Setup.SetField(holder, "fist", fistData);
             M1Setup.SetField(holder, "pickupPrefab", pickupPrefab);
             M1Setup.SetField(holder, "melee", melee);
+            M1Setup.SetField(holder, "ranged", ranged);
+            M1Setup.SetField(ranged, "projectilePrefab", AssetDatabase.LoadAssetAtPath<GameObject>(ProjectilePrefabPath).GetComponent<Projectile>());
+            M1Setup.SetField(ranged, "holder", holder);
             M1Setup.SetField(controller, "config", playerConfig);
             M1Setup.SetField(controller, "weapons", holder);
 
