@@ -48,7 +48,7 @@ Game 뷰 캡처로 확인. 컴파일 에러 없음. 플레이어 지름이 화�
 - `MeleeAttack`(구 `FistAttack`): 부채꼴 각도 0이면 직선 상자, 0 초과면 부채꼴. 부채꼴 범위 표시는 코드로 생성한 스프라이트
 - `Tools/Fear/M2 Setup` → `M2_Sandbox`(가시창 픽업 2개, 더미 4개, 벽). `M1 Setup`도 같은 플레이어 리그를 공유하며 M1_Sandbox를 재생성. 빌드 목록 M2, M1, M0 순
 - 입력: `GameInput.Interact`(Space). 좌상단 디버그 HUD(OnGUI)에 무기/잔량 표시
-- 주의: `M2 Setup`은 씬을 매번 새로 만들므로 M2_Sandbox를 에디터에서 직접 고친 내용(폭탄 픽업 추가 배치)은 재실행하면 사라진다. 유지하려면 `M2Setup.BuildScene`의 PlacePickup에 반영할 것
+- `M2 Setup`은 씬을 매번 새로 만들므로, 에디터에서 M2_Sandbox를 고친 내용은 재실행하면 사라진다. 배치를 바꿀 때는 `M2Setup.BuildScene`의 PlacePickup/CreateDummy를 수정할 것(픽업 배치는 이미 반영: 가시 3, 폭탄 3, 권총 2, 가시창 2)
 - 임시값(기획 빈칸, SO에서 조정): 가시창 부채꼴 120도, 투사체 속도 20(총알 40) 지름/초, 투척 가시 간격 0.3초. SO는 id가 빈 경우에만 초기화하므로 조정한 수치는 덮어쓰지 않음
 
 ### 2단계: 원거리 무기 (완료)

@@ -187,10 +187,14 @@ namespace Game.Editor
             // 무기 픽업(교체/드롭 테스트를 위해 같은 무기를 2개 이상 둔다)
             PlacePickup(catalog.Find("spear"), 0, new Vector2(-3f, -2f));
             PlacePickup(catalog.Find("spear"), 0, new Vector2(3f, -2f));
-            PlacePickup(catalog.Find("thorn"), 0, new Vector2(-6f, -2f));      // 6개 묶음
-            PlacePickup(catalog.Find("thorn"), 0, new Vector2(-6f, -3.5f));    // 합산 습득 테스트(상한 12)
+            // 투척 가시 6개 묶음 3개: 합산 습득(상한 12, 초과분 잔류) 테스트
+            PlacePickup(catalog.Find("thorn"), 0, new Vector2(-6f, -3.5f));
+            PlacePickup(catalog.Find("thorn"), 0, new Vector2(-4.33f, -3.49f));
+            PlacePickup(catalog.Find("thorn"), 0, new Vector2(-3.08f, -3.49f));
+            // 폭탄알 3개: 상한 2 클램프 테스트
             PlacePickup(catalog.Find("bomb"), 0, new Vector2(6f, -2f));
             PlacePickup(catalog.Find("bomb"), 0, new Vector2(6f, -3.5f));
+            PlacePickup(catalog.Find("bomb"), 0, new Vector2(6f, -5.18f));
             PlacePickup(catalog.Find("pistol"), 0, new Vector2(0f, -3.5f));    // 16발 탄창
             PlacePickup(catalog.Find("pistol"), 0, new Vector2(1.5f, -3.5f));  // 교체/잔량 유지 테스트
 
