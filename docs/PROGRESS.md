@@ -79,7 +79,7 @@ Game 뷰 캡처로 확인. 컴파일 에러 없음. 플레이어 지름이 화�
 - 캡처의 상하 검은 띠는 캡처 창 비율에 의한 레터박스이며 결함이 아님
 - 에디터가 자동 생성한 변경: `ProjectSettings.asset`의 `APP_UI_EDITOR_ONLY` 정의, `SceneTemplateSettings.json`
 
-## M1 결과 (완료: 이동·조준·주먹 처치·벽 차단·K 즉사·R 재시작을 사용자가 플레이로 확인)
+## M1 결과 (M2에서 `MeleeWeaponData`→`WeaponData`, `FistAttack`→`MeleeAttack`, `FistRange`→`MeleeRange`로 이름 변경됨. 아래는 M1 당시 기록) (완료: 이동·조준·주먹 처치·벽 차단·K 즉사·R 재시작을 사용자가 플레이로 확인)
 
 ### 만든 것
 
@@ -114,7 +114,7 @@ WASD 이동, 마우스 조준, 좌클릭으로 더미 처치, 벽 뒤 더미는 
 
 - 현재 브랜치 main, M1·M2 커밋은 로컬만 있고 원격 푸시 전
 - 시작 시 할 일: 개발계획 M3 절과 `docs/기획.md`의 적 항목·수치 표를 읽는다
-- 씬/에셋 구성은 `Editor/`의 메뉴 스크립트(`M0 Setup`, `M1 Setup`)가 재생성하므로, M2까지 같은 방식이므로 M3도 `M3 Setup`을 만들어 씬 YAML을 직접 편집하지 않는다
+- 씬/에셋 구성은 `Editor/`의 메뉴 스크립트(`M0 Setup`, `M1 Setup`, `M2 Setup`)가 재생성하므로, M3도 `M3 Setup`을 만들어 씬 YAML을 직접 편집하지 않는다. 플레이어 리그와 무기 에셋은 `M2Setup`이 담당하고 `M1 Setup`이 이를 호출한다
 
 ## 다음 단계
 
