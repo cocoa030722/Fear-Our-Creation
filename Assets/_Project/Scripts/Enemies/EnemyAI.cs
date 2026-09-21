@@ -19,7 +19,7 @@ namespace Game.Enemies
     /// 시야로 플레이어를 보면 바로 추격, 소리를 들으면 그 지점으로 이동하며 경계(지속 시간은 소리 이벤트 값).
     /// 벽에 막히면 NavGrid 경로를 따라 이동한다.
     /// </summary>
-    [RequireComponent(typeof(EnemyBase), typeof(Perception), typeof(EnemyMeleeAttack))]
+    [RequireComponent(typeof(EnemyBase), typeof(Perception), typeof(EnemyAttack))]
     public class EnemyAI : MonoBehaviour
     {
         [Tooltip("순찰 지점(비우면 제자리 대기). 순서대로 왕복한다")]
@@ -34,7 +34,7 @@ namespace Game.Enemies
 
         EnemyBase _enemy;
         Perception _perception;
-        EnemyMeleeAttack _attack;
+        EnemyAttack _attack;
         Rigidbody2D _rb;
 
         EnemyState _state;
@@ -60,7 +60,7 @@ namespace Game.Enemies
         {
             _enemy = GetComponent<EnemyBase>();
             _perception = GetComponent<Perception>();
-            _attack = GetComponent<EnemyMeleeAttack>();
+            _attack = GetComponent<EnemyAttack>();
             _rb = GetComponent<Rigidbody2D>();
             _perception.Heard += OnHeard;
             _enemy.Died += OnDied;
@@ -166,8 +166,7 @@ namespace Game.Enemies
             if (seen)
             {
                 Vector2 to = playerPos - (Vector2)transform.position;
-                float triggerDistance = _enemy.BodyRadius + _attack.Reach * 0.9f;
-                if (to.magnitude <= triggerDistance)
+                if (to.magnitude <= _attack.TriggerDistance)
                 {
                     _desiredVelocity = Vector2.zero;
                     Face(to);
@@ -284,7 +283,7 @@ namespace Game.Enemies
                 mr.sharedMaterial = font.material;
                 mr.sortingOrder = 5;
             }
-            _label.text = _state.ToString();
+            _label.text = _enemy.Data.displayName + "\n" + _state;
             // 적이 회전해도 글자는 위에 고정
             _label.transform.rotation = Quaternion.identity;
             _label.transform.position = transform.position + new Vector3(0f, _enemy.BodyRadius + 0.2f, 0f);

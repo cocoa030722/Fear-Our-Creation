@@ -4,11 +4,13 @@ using UnityEngine;
 namespace Game.Weapons
 {
     /// <summary>
-    /// 플레이어의 투사체(투척 가시, 폭탄알, 권총탄). 직선 비행하며 매 프레임 이동 구간을 레이캐스트해 터널링을 막는다.
+    /// 투사체(투척 가시, 폭탄알, 권총탄). 플레이어와 적이 함께 쓴다. 직선 비행하며 매 프레임 이동 구간을 레이캐스트해 터널링을 막는다.
     /// 벽(Wall 레이어)에 막히고, 적/파괴 가능 오브젝트에 명중하면 무기 종류에 따라 처리한다.
     ///  - 투척 가시: 명중 시 hitRecoverChance, 빗나감(벽) 시 missRecoverChance 확률로 회수용 픽업을 남김
     ///  - 폭탄알: 적/벽에 닿으면 폭발
     ///  - 권총탄: 명중하거나 벽에 닿으면 소멸
+    /// 출처(HitSource)에 따라 상대가 다르다: 플레이어 발사는 적/오브젝트에, 적 발사는 플레이어/오브젝트에 반응하고
+    /// 다른 적은 지나친다(아군 오사 없음). 회수용 가시는 플레이어가 쏜 것만 남긴다.
     /// </summary>
     public class Projectile : MonoBehaviour
     {
@@ -21,17 +23,22 @@ namespace Game.Weapons
         static readonly RaycastHit2D[] Hits = new RaycastHit2D[8];
 
         WeaponData _data;
+        HitSource _source;
         Vector2 _dir;
         float _speed;
         float _travelled;
         int _mask;
 
-        public void Init(WeaponData data, Vector2 direction)
+        /// <param name="speedOverride">0 이하이면 무기 SO의 속도(지름/초)를 쓴다. 적은 플레이어 속도 배수로 계산한 월드 속도를 넘긴다.</param>
+        public void Init(WeaponData data, Vector2 direction, HitSource source = HitSource.Player, float speedOverride = 0f)
         {
             _data = data;
+            _source = source;
             _dir = direction.normalized;
-            _speed = GameConstants.FromPlayerDiameters(data.projectileSpeedInDiameters);
-            _mask = Layers.Mask(Layers.Wall, Layers.Enemy, Layers.Destructible);
+            _speed = speedOverride > 0f ? speedOverride : GameConstants.FromPlayerDiameters(data.projectileSpeedInDiameters);
+            _mask = source == HitSource.Player
+                ? Layers.Mask(Layers.Wall, Layers.Enemy, Layers.Destructible)
+                : Layers.Mask(Layers.Wall, Layers.Player, Layers.Destructible);
             transform.up = _dir;
 
             if (body != null)
@@ -78,8 +85,8 @@ namespace Game.Weapons
                 Explode(point - _dir * 0.05f);
                 return;
             }
-            target.TakeHit(new HitInfo(HitSource.Player, HitKind.Projectile, point, _dir));
-            if (_data.kind == WeaponKind.Thrown && Random.value < _data.hitRecoverChance) DropRecoverable(point);
+            target.TakeHit(new HitInfo(_source, HitKind.Projectile, point, _dir));
+            if (_data.kind == WeaponKind.Thrown && _source == HitSource.Player && Random.value < _data.hitRecoverChance) DropRecoverable(point);
             Destroy(gameObject);
         }
 
@@ -92,7 +99,7 @@ namespace Game.Weapons
                     Explode(point - _dir * 0.1f);
                     return;
                 case WeaponKind.Thrown:
-                    if (Random.value < _data.missRecoverChance) DropRecoverable(point - _dir * 0.2f);
+                    if (_source == HitSource.Player && Random.value < _data.missRecoverChance) DropRecoverable(point - _dir * 0.2f);
                     break;
             }
             Destroy(gameObject);
@@ -100,13 +107,13 @@ namespace Game.Weapons
 
         void OnHitNothing()
         {
-            if (_data.kind == WeaponKind.Thrown && Random.value < _data.missRecoverChance) DropRecoverable(transform.position);
+            if (_data.kind == WeaponKind.Thrown && _source == HitSource.Player && Random.value < _data.missRecoverChance) DropRecoverable(transform.position);
             Destroy(gameObject);
         }
 
         void Explode(Vector2 center)
         {
-            ExplosionEffect.Detonate(_data, center, HitSource.Player, explosionPrefab);
+            ExplosionEffect.Detonate(_data, center, _source, explosionPrefab);
             Destroy(gameObject);
         }
 

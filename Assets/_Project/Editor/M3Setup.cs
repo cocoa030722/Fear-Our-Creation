@@ -20,7 +20,14 @@ namespace Game.Editor
         const string ScenePath = Root + "/Scenes/M3_Sandbox.unity";
         const string EnemyDir = Root + "/Data/Enemies";
         const string SpearGruntDataPath = EnemyDir + "/SpearGrunt.asset";
+        const string ThrowerDataPath = EnemyDir + "/ThornThrower.asset";
+        const string GrenadierDataPath = EnemyDir + "/Grenadier.asset";
         const string SpearGruntPrefabPath = Root + "/Prefabs/Enemies/SpearGrunt.prefab";
+        const string ThrowerPrefabPath = Root + "/Prefabs/Enemies/ThornThrower.prefab";
+        const string GrenadierPrefabPath = Root + "/Prefabs/Enemies/Grenadier.prefab";
+        const string ProjectilePrefabPath = Root + "/Prefabs/Projectiles/Projectile.prefab";
+        const string ThornWeaponPath = Root + "/Data/Weapons/ThrownThorn.asset";
+        const string BombWeaponPath = Root + "/Data/Weapons/BombShell.asset";
         const string SpearWeaponPath = Root + "/Data/Weapons/Spear.asset";
         const string PickupPrefabPath = Root + "/Prefabs/Weapons/WeaponPickup.prefab";
 
@@ -38,43 +45,76 @@ namespace Game.Editor
         {
             if (!M2Setup.EnsureAssets()) return false;
 
-            var data = AssetDatabase.LoadAssetAtPath<EnemyData>(SpearGruntDataPath);
-            if (data == null)
+            var config = AssetDatabase.LoadAssetAtPath<PlayerConfig>(M2Setup.PlayerConfigPath);
+            var spear = AssetDatabase.LoadAssetAtPath<WeaponData>(SpearWeaponPath);
+            var thorn = AssetDatabase.LoadAssetAtPath<WeaponData>(ThornWeaponPath);
+            var bomb = AssetDatabase.LoadAssetAtPath<WeaponData>(BombWeaponPath);
+
+            // 기획 표의 수치는 그대로, 기획에 없는 값은 임시값(개발계획 6절). id가 비어 있을 때만 초기화하므로 조정한 값은 유지된다
+            InitEnemy(SpearGruntDataPath, "spear_grunt", "Spear Grunt", config, d =>
             {
-                data = ScriptableObject.CreateInstance<EnemyData>();
-                AssetDatabase.CreateAsset(data, SpearGruntDataPath);
-            }
-            if (string.IsNullOrEmpty(data.id))
+                d.moveSpeedMultiplier = 0.9f;      // 기획: 플레이어의 0.9배
+                d.weapon = spear;                  // 기획: 공격 범위 = 가시창과 동일
+                d.attackWindupSeconds = 0.2f;      // 기획: 발동 딜레이 0.2초
+                d.attackIntervalSeconds = 1f;      // 기획: 공격 간격 1.0초
+                d.lootWeapon = spear;              // 기획: 가시창 노획
+            });
+            InitEnemy(ThrowerDataPath, "thorn_thrower", "Thrower", config, d =>
             {
-                var spear = AssetDatabase.LoadAssetAtPath<WeaponData>(SpearWeaponPath);
-                data.id = "spear_grunt";
-                data.displayName = "Spear Grunt";
-                data.playerConfig = AssetDatabase.LoadAssetAtPath<PlayerConfig>(M2Setup.PlayerConfigPath);
-                data.moveSpeedMultiplier = 0.9f;  // 기획: 플레이어의 0.9배
-                data.weapon = spear;              // 기획: 공격 범위 = 가시창과 동일
-                data.attackWindupSeconds = 0.2f;  // 기획: 발동 딜레이 0.2초
-                data.attackIntervalSeconds = 1f;  // 기획: 공격 간격 1.0초
-                data.sightAngleDegrees = 90f;     // 기획: 전방 90도
-                data.sightRangeInScreenWidths = 0.5f; // 기획: 화면 가로 길이의 절반
-                data.lootWeapon = spear;          // 기획: 가시창 노획
-                EditorUtility.SetDirty(data);
-            }
+                d.bodyDiameterInPlayerDiameters = 0.9f; // 기획: 마른 체형(수치 없음, 임시)
+                d.moveSpeedMultiplier = 1f;             // 기획에 없음, 임시
+                d.weapon = thorn;
+                d.attackWindupSeconds = 0.2f;           // 일반 적 발동 딜레이(임의값)
+                d.attackIntervalSeconds = 0.5f;         // 기획: 투척병 발사 간격 0.5초
+                d.projectileSpeedMultiplier = 2.5f;     // 개발계획 6-1 임시값
+                d.engageDistanceInPlayerDiameters = 6f;
+                d.lootWeapon = thorn;                   // 기획: 투척 가시 노획(6개 묶음)
+            });
+            InitEnemy(GrenadierDataPath, "grenadier", "Grenadier", config, d =>
+            {
+                d.bodyDiameterInPlayerDiameters = 1.2f; // 기획: 한쪽 팔이 비대(수치 없음, 임시)
+                d.moveSpeedMultiplier = 0.8f;           // 기획에 없음, 임시
+                d.weapon = bomb;
+                d.attackWindupSeconds = 0.2f;
+                d.attackIntervalSeconds = 5f;           // 기획: 척탄병 투척 간격 5초
+                d.projectileSpeedMultiplier = 2.5f;     // 기획: 폭탄알 속도 = 투척 가시와 같음
+                d.engageDistanceInPlayerDiameters = 7f;
+                d.lootWeapon = bomb;                    // 기획: 폭탄알 노획
+            });
             AssetDatabase.SaveAssets();
 
-            EnsureSpearGruntPrefab();
+            EnsureEnemyPrefab(SpearGruntPrefabPath, SpearGruntDataPath, "SpearGrunt", new Color32(0x7A, 0x10, 0x10, 0xFF), false);
+            EnsureEnemyPrefab(ThrowerPrefabPath, ThrowerDataPath, "ThornThrower", new Color32(0xFF, 0x9A, 0x9A, 0xFF), true);
+            EnsureEnemyPrefab(GrenadierPrefabPath, GrenadierDataPath, "Grenadier", PlaceholderPalette.Hazard, true); // 노란 표식 = 폭탄알을 든 손
             return true;
         }
 
-        static void EnsureSpearGruntPrefab()
+        static void InitEnemy(string path, string id, string displayName, PlayerConfig config, System.Action<EnemyData> setValues)
         {
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(SpearGruntPrefabPath) != null) return;
+            var data = AssetDatabase.LoadAssetAtPath<EnemyData>(path);
+            if (data == null)
+            {
+                data = ScriptableObject.CreateInstance<EnemyData>();
+                AssetDatabase.CreateAsset(data, path);
+            }
+            if (!string.IsNullOrEmpty(data.id)) return;
+            data.id = id;
+            data.displayName = displayName;
+            data.playerConfig = config;
+            setValues(data);
+            EditorUtility.SetDirty(data);
+        }
+
+        static void EnsureEnemyPrefab(string prefabPath, string dataPath, string name, Color facingColor, bool ranged)
+        {
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) != null) return;
             var circle = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Sprites/Circle.png");
             var unlit = AssetDatabase.LoadAssetAtPath<Material>(Root + "/Art/Materials/SpriteUnlit.mat");
-            var data = AssetDatabase.LoadAssetAtPath<EnemyData>(SpearGruntDataPath);
+            var data = AssetDatabase.LoadAssetAtPath<EnemyData>(dataPath);
             var pickupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PickupPrefabPath).GetComponent<WeaponPickup>();
 
-            var go = M1Setup.CreateSprite("SpearGrunt", circle, unlit, PlaceholderPalette.Enemy, Vector2.zero,
-                Vector2.one * data.bodyDiameterInPlayerDiameters * GameConstants.PlayerDiameter, Layers.Enemy);
+            float diameter = data.bodyDiameterInPlayerDiameters * GameConstants.PlayerDiameter;
+            var go = M1Setup.CreateSprite(name, circle, unlit, PlaceholderPalette.Enemy, Vector2.zero, Vector2.one * diameter, Layers.Enemy);
             var rb = go.AddComponent<Rigidbody2D>();
             rb.gravityScale = 0f;
             rb.freezeRotation = true;
@@ -83,23 +123,29 @@ namespace Game.Editor
             var col = go.AddComponent<CircleCollider2D>();
             col.radius = 0.5f;
 
-            // 앞쪽 표시(플레이스홀더): 짙은 붉은 작은 원. 시야 방향을 알 수 있게 한다
-            var facing = M1Setup.CreateSprite("Facing", circle, unlit, new Color32(0x7A, 0x10, 0x10, 0xFF), Vector2.zero, Vector2.one * 0.24f, Layers.Enemy);
+            // 앞쪽 표시(플레이스홀더): 시야 방향을 알 수 있게 한다. 자식이므로 몸 지름에 비례해 커진다
+            var facing = M1Setup.CreateSprite("Facing", circle, unlit, facingColor, Vector2.zero, Vector2.one * 0.24f, Layers.Enemy);
             facing.transform.SetParent(go.transform, false);
             facing.transform.localPosition = new Vector3(0f, 0.32f, 0f);
             facing.GetComponent<SpriteRenderer>().sortingOrder = 1;
 
             var enemy = go.AddComponent<EnemyBase>();
             go.AddComponent<Perception>();
-            go.AddComponent<EnemyMeleeAttack>();
-            go.AddComponent<EnemyAI>();
             M1Setup.SetField(enemy, "data", data);
             M1Setup.SetField(enemy, "body", go.GetComponent<SpriteRenderer>());
             M1Setup.SetField(enemy, "hitCollider", col);
             M1Setup.SetField(enemy, "rb", rb);
             M1Setup.SetField(enemy, "pickupPrefab", pickupPrefab);
 
-            PrefabUtility.SaveAsPrefabAsset(go, SpearGruntPrefabPath);
+            if (ranged)
+            {
+                var attack = go.AddComponent<EnemyRangedAttack>();
+                M1Setup.SetField(attack, "projectilePrefab", AssetDatabase.LoadAssetAtPath<GameObject>(ProjectilePrefabPath).GetComponent<Projectile>());
+            }
+            else go.AddComponent<EnemyMeleeAttack>();
+            go.AddComponent<EnemyAI>();
+
+            PrefabUtility.SaveAsPrefabAsset(go, prefabPath);
             Object.DestroyImmediate(go);
         }
 
@@ -133,6 +179,11 @@ namespace Game.Editor
             // 권총 소리 테스트: 위쪽 구석에서 벽 너머를 보지 못하고 서 있다가 소리를 들으면 발사 지점으로 이동
             PlaceGrunt(prefab, "Grunt Sound Test", new Vector2(10f, 6.5f), 0f);
 
+            // 가시 투척병: 오른쪽 아래에서 왼쪽을 보고 서 있음. 접근하면 멈춰 서서 발사
+            PlaceEnemy(AssetDatabase.LoadAssetAtPath<GameObject>(ThrowerPrefabPath), "Thrower", new Vector2(12f, -5f), 90f);
+            // 척탄병: 왼쪽 위에서 오른쪽을 보고 서 있음. 5초 간격으로 폭탄알
+            PlaceEnemy(AssetDatabase.LoadAssetAtPath<GameObject>(GrenadierPrefabPath), "Grenadier", new Vector2(-12f, 5.5f), 270f);
+
             // 테스트용 무기: 권총(소리), 가시창(노획 전에도 시험)
             PlacePickup(catalog.Find("pistol"), new Vector2(-2f, -2f));
             PlacePickup(catalog.Find("spear"), new Vector2(2f, -2f));
@@ -146,6 +197,8 @@ namespace Game.Editor
             var wall = M1Setup.CreateSprite(name, square, unlit, PlaceholderPalette.LabObject, pos, size, Layers.Wall);
             wall.AddComponent<BoxCollider2D>().size = Vector2.one;
         }
+
+        static void PlaceEnemy(GameObject prefab, string name, Vector2 pos, float angleZ) => PlaceGrunt(prefab, name, pos, angleZ);
 
         static void PlaceGrunt(GameObject prefab, string name, Vector2 pos, float angleZ, params Vector2[] patrol)
         {

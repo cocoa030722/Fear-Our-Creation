@@ -35,13 +35,17 @@ namespace Game.Enemies
         [Tooltip("플레이어를 놓친 뒤 마지막 목격 지점에서 경계를 유지하는 시간(초). 기획에 수치 없음, 임시값")]
         public float alertSecondsAfterLostSight = 3f;
 
-        [Header("근접 공격")]
-        [Tooltip("공격 모양(사거리/부채꼴)을 가져올 무기. 창병은 가시창과 동일")]
+        [Header("공격")]
+        [Tooltip("사용 무기. 근접(창병)은 공격 모양(사거리/부채꼴)을, 원거리(투척병=투척 가시, 척탄병=폭탄알)는 투사체 종류를 가져온다")]
         public WeaponData weapon;
         [Tooltip("공격 발동 딜레이(초). 기획: 0.2, 임의값")]
         public float attackWindupSeconds = 0.2f;
         [Tooltip("공격 간격(초). 기획: 1.0, 임의값")]
         public float attackIntervalSeconds = 1f;
+        [Tooltip("원거리: 투사체 속도(플레이어 이동속도의 배수). 기획에 수치 없음, 개발계획 6-1의 임시값 2.5배. 폭탄알도 같은 값")]
+        public float projectileSpeedMultiplier = 2.5f;
+        [Tooltip("원거리: 이 거리(플레이어 지름의 배수) 이내로 다가오면 멈추고 발사한다. 기획에 수치 없음, 임시값")]
+        public float engageDistanceInPlayerDiameters = 6f;
 
         [Header("노획")]
         [Tooltip("사망 시 떨어뜨리는 무기(없으면 비움)")]
@@ -50,6 +54,7 @@ namespace Game.Enemies
         public int lootAmmo;
 
         public float MoveSpeed => playerConfig.moveSpeed * moveSpeedMultiplier;
+        public float ProjectileSpeed => playerConfig.moveSpeed * projectileSpeedMultiplier;
         public float PatrolSpeed => playerConfig.moveSpeed * patrolSpeedMultiplier;
     }
 }
