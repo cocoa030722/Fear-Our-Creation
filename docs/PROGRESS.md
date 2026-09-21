@@ -25,7 +25,7 @@ Game 뷰 캡처로 확인. 컴파일 에러 없음. 플레이어 지름이 화�
 - `Scripts/Core/FixedCamera.cs`: Orthographic Size 고정, 16:9 레터박스
 - `Editor/M0ProjectSetup.cs`: 메뉴 `Tools/Fear/M0 Setup`. 폴더·레이어·충돌 매트릭스·스프라이트·머티리얼·씬 생성(재실행 안전)
 - 에셋: `Art/Sprites/Circle.png`, `Square.png`(256px, 256PPU), `Art/Materials/SpriteUnlit.mat`
-- 씬: `Scenes/M0_Sandbox.unity`(Main Camera + Player). 빌드 설정의 씬 목록은 이 씬 하나
+- 씬: `Scenes/M0_Sandbox.unity`(Main Camera + Player). 빌드 설정의 씬 목록은 M1에서 M1_Sandbox, M0_Sandbox 순으로 바뀜
 
 ### 프로젝트 설정 변경
 
@@ -68,6 +68,16 @@ WASD 이동, 마우스 조준, 좌클릭으로 더미 처치, 벽 뒤 더미는 
 - 재시작 상태는 정적 `SnapshotSystem`이 보관하고 `SubsystemRegistration`에서 초기화(도메인 리로드 비활성 대비)
 - `EditorSceneManager.NewScene(Single)`은 참조 없이 로드된 SO를 언로드해 fake-null로 만든다 → 에셋 로드는 NewScene 이후에 하고, SetField는 null이면 에러를 로그. (실패 사례: 처음 M1 Setup에서 `PlayerController.config`/`FistAttack.data`가 씬에 null로 저장돼 이동·공격 불가, 콘솔 NRE `PlayerController.cs:48`)
 - 이번 세션 초반엔 에디터가 꺼져 있어 `Unity.exe -batchmode -executeMethod`로 컴파일/셋업 실행
+
+## 시도했으나 실패한 것 / 함정
+- `unity command`가 "No Unity Editor instances found"로 실패하면 에디터가 꺼진 것일 수 있다(`Get-Process`로 Unity 프로세스 확인). 꺼져 있으면 batch mode, 켜져 있으면 batch mode는 "다른 에디터에서 열림"으로 실패하므로 `unity command`를 쓴다
+- `unity command console`은 이전 실행의 에러도 남아 있으니 `timestampUtc`/스택 시그니처로 최신 여부를 확인한다
+- 프로젝트 루트에서 `grep -r`는 `Library/`까지 훑어 2분 넘게 걸린다. Grep 도구에 `glob`을 주거나 `docs/`, `Assets/_Project/`로 범위를 좁힌다
+
+## 다음 세션 시작 가이드
+- 현재 브랜치 main, 최신 커밋 `8cd7a62`(M1). 로컬 커밋만 있고 원격 푸시 전
+- 시작 시 할 일: 개발계획 M2 절(`docs/개발계획.md` 3.7 무기 시스템, M2 마일스톤)과 `docs/기획.md`의 무기 표 수치를 읽는다
+- 씬/에셋 구성은 `Editor/`의 메뉴 스크립트(`M0 Setup`, `M1 Setup`)가 재생성하므로, M2도 같은 방식으로 `M2 Setup`을 만들어 씬 YAML을 직접 편집하지 않는다
 
 ## 다음 단계
 - M2(무기 시스템) 착수
