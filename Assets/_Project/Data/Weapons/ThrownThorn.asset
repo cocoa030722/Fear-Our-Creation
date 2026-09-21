@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5545232b9b445d64a99ae6711e8f6864, type: 3}
-  m_Name: Fist
-  m_EditorClassIdentifier: Game.Runtime::Game.Weapons.MeleeWeaponData
-  id: fist
-  displayName: Fist
-  kind: 0
-  windupSeconds: 0.1
-  intervalSeconds: 0.5
-  pickupColor: {r: 0.101960786, g: 0.6509804, b: 0.6509804, a: 1}
-  maxAmmo: 0
-  pickupAmmo: 0
-  stackable: 0
+  m_Name: ThrownThorn
+  m_EditorClassIdentifier: Game.Runtime::Game.Weapons.WeaponData
+  id: thorn
+  displayName: Thorn
+  kind: 1
+  windupSeconds: 0
+  intervalSeconds: 0.3
+  pickupColor: {r: 0.36078432, g: 0.78431374, b: 0.78431374, a: 1}
+  maxAmmo: 12
+  pickupAmmo: 6
+  stackable: 1
   rangeInDiameters: 1
   widthInDiameters: 0.5
   arcDegrees: 0
@@ -30,4 +30,4 @@ MonoBehaviour:
   explosionDiameters: 4
   aggroRadiusInScreenWidths: 1
   aggroSeconds: 5
-  bossDamage: 25
+  bossDamage: 4.1666665

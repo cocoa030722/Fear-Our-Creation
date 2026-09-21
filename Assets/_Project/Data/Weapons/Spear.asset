@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5545232b9b445d64a99ae6711e8f6864, type: 3}
-  m_Name: Fist
-  m_EditorClassIdentifier: Game.Runtime::Game.Weapons.MeleeWeaponData
-  id: fist
-  displayName: Fist
+  m_Name: Spear
+  m_EditorClassIdentifier: Game.Runtime::Game.Weapons.WeaponData
+  id: spear
+  displayName: Spear
   kind: 0
   windupSeconds: 0.1
-  intervalSeconds: 0.5
+  intervalSeconds: 0.3
   pickupColor: {r: 0.101960786, g: 0.6509804, b: 0.6509804, a: 1}
   maxAmmo: 0
   pickupAmmo: 0
   stackable: 0
-  rangeInDiameters: 1
+  rangeInDiameters: 2
   widthInDiameters: 0.5
-  arcDegrees: 0
+  arcDegrees: 120
   projectileSpeedInDiameters: 20
   hitRecoverChance: 0.5
   missRecoverChance: 1

@@ -4,12 +4,12 @@ using UnityEngine;
 
 namespace Game.Player
 {
-    /// <summary>WASD 이동, 마우스 방향 조준 회전, 좌클릭 공격. 사망 시 조작 불가.</summary>
+    /// <summary>WASD 이동, 마우스 방향 조준 회전, 좌클릭 공격, 스페이스 무기 습득/교체. 사망 시 조작 불가.</summary>
     [RequireComponent(typeof(Rigidbody2D), typeof(PlayerHealth))]
     public class PlayerController : MonoBehaviour
     {
         [SerializeField] PlayerConfig config;
-        [SerializeField] FistAttack fist;
+        [SerializeField] WeaponHolder weapons;
 
         Rigidbody2D _rb;
         PlayerHealth _health;
@@ -31,7 +31,6 @@ namespace Game.Player
         void Start()
         {
             _camera = Camera.main;
-            // M2에서 PlayerLoadout.Current를 읽어 무기를 장착한다. 현재는 주먹 고정.
         }
 
         void Update()
@@ -40,7 +39,8 @@ namespace Game.Player
 
             _moveInput = Vector2.ClampMagnitude(GameInput.Instance.Move.ReadValue<Vector2>(), 1f);
             Aim();
-            if (GameInput.Instance.Attack.WasPressedThisFrame()) fist.TryAttack();
+            if (GameInput.Instance.Attack.WasPressedThisFrame()) weapons.TryAttack();
+            if (GameInput.Instance.Interact.WasPressedThisFrame()) weapons.TryInteract();
         }
 
         void FixedUpdate()
@@ -63,7 +63,7 @@ namespace Game.Player
         void OnDied()
         {
             _moveInput = Vector2.zero;
-            fist.Cancel();
+            weapons.CancelAttack();
         }
     }
 }
