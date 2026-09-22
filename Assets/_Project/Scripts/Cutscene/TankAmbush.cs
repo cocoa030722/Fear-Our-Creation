@@ -11,8 +11,8 @@ namespace Game.Cutscene
     /// <summary>
     /// 4-2 배양실 기습 연출. 순서: 시작 시 양옆 유리 수조 안에 적이 잠들어 있음(공격받지도 공격하지도 않음)
     /// → 플레이어가 기준 x를 넘어 전진 → 카메라가 수조를 비추고 슬로우모션(플레이어가 대비할 시간)
-    /// → 유리가 깨지며 적이 나와 플레이어에게 경계 상태로 달려듦 → 카메라 복귀, 슬로우가 서서히 풀림.
-    /// 재시작(R)으로 열린 씬에서는 카메라/슬로우 연출을 생략하고 곧바로 깨뜨린다(재시작 속도 우선, skipShowOnRestart).
+    /// → 유리가 깨지며 적이 나와 플레이어에게 경계 상태로 달려듦 → 카메라가 플레이어로 돌아오면 즉시 정상 속도.
+    /// 재시작(R)으로 열린 씬에서도 같은 카메라/슬로우 연출을 그대로 재생한다.
     /// </summary>
     public class TankAmbush : MonoBehaviour
     {
@@ -37,12 +37,7 @@ namespace Game.Cutscene
         [SerializeField] float holdAfterBreakSeconds = 0.8f;
         [Tooltip("슬로우모션 시간 배율")]
         [SerializeField] float slowScale = 0.3f;
-        [Tooltip("카메라가 플레이어로 돌아온 뒤 슬로우가 유지되는 시간")]
-        [SerializeField] float slowAfterReturnSeconds = 2.5f;
-        [Tooltip("슬로우가 정상 속도로 돌아오는 데 걸리는 시간")]
-        [SerializeField] float slowRecoverSeconds = 1.5f;
         [SerializeField] float cameraBlendSeconds = 0.8f;
-        [SerializeField] bool skipShowOnRestart = true;
 
         [Header("깨질 때")]
         [Tooltip("수조마다 깨지는 시간 차(초, 실시간)")]
@@ -87,11 +82,6 @@ namespace Game.Cutscene
 
             while (_health.IsDead || _player.transform.position.x < triggerX) yield return null;
 
-            if (SnapshotSystem.LoadedByRestart && skipShowOnRestart)
-            {
-                yield return BreakAll();
-                yield break;
-            }
             yield return PlayShow();
         }
 
@@ -127,15 +117,9 @@ namespace Game.Cutscene
 
             if (focusCamera != null) focusCamera.gameObject.SetActive(false); // 플레이어 카메라로 복귀
             yield return WaitUnscaled(cameraBlendSeconds);
-            if (!_health.IsDead) _player.ControlLocked = false;
-
-            yield return WaitUnscaled(slowAfterReturnSeconds);
-            for (float t = 0f; t < slowRecoverSeconds; t += Time.unscaledDeltaTime)
-            {
-                Time.timeScale = Mathf.Lerp(slowScale, 1f, t / slowRecoverSeconds);
-                yield return null;
-            }
+            // 카메라가 플레이어로 돌아오면 슬로우 없이 즉시 정상 속도로 복귀하고 조작을 돌려준다
             Time.timeScale = 1f;
+            if (!_health.IsDead) _player.ControlLocked = false;
         }
 
         /// <summary>슬로우모션과 무관하게 흐르는 대기(실시간 초).</summary>
