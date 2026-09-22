@@ -49,6 +49,7 @@ namespace Game.Enemies
                 rb.linearVelocity = Vector2.zero;
                 rb.simulated = false;
             }
+            Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.EnemyDeath);
             DropLoot();
             Died?.Invoke();
         }

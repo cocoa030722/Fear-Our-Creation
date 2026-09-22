@@ -117,6 +117,7 @@ namespace Game.Weapons
             _nextAttackTime = Time.time + _data.intervalSeconds;
             _hitTime = Time.time + _data.windupSeconds;
             _indicatorUntil = _hitTime + indicatorLingerSeconds;
+            Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.MeleeSwing);
             return true;
         }
 

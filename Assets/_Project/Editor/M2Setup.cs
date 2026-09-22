@@ -1,3 +1,4 @@
+using Game.Audio;
 using Game.Core;
 using Game.Enemies;
 using Game.Player;
@@ -217,6 +218,7 @@ namespace Game.Editor
             // 재시작/스냅샷 컨트롤러
             new GameObject("RestartController").AddComponent<RestartController>();
             new GameObject("PauseMenu").AddComponent<PauseMenu>();
+            new GameObject("SfxPlayer").AddComponent<SfxPlayer>();
 
             // 플레이어
             var player = M1Setup.CreateSprite("Player", circle, unlit, PlaceholderPalette.Player, Vector2.zero, Vector2.one * GameConstants.PlayerDiameter, Layers.Player);
@@ -271,6 +273,7 @@ namespace Game.Editor
             cam.orthographicSize = GameConstants.CameraOrthographicSize;
             camGo.AddComponent<FixedCamera>();
             camGo.AddComponent<CinemachineBrain>();
+            camGo.AddComponent<AudioListener>();
 
             var vcamGo = new GameObject("CM Player Follow");
             var vcam = vcamGo.AddComponent<CinemachineCamera>();

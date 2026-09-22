@@ -78,6 +78,7 @@ namespace Game.Weapons
                 SetAmmo(Ammo + taken);
                 if (taken >= pickup.ammo) Destroy(pickup.gameObject);
                 else pickup.SetAmmo(pickup.ammo - taken);
+                Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.Pickup);
                 return;
             }
 
@@ -92,6 +93,7 @@ namespace Game.Weapons
 
             if (Current != fist) WeaponPickup.Spawn(pickupPrefab, Current, Ammo, spot);
             Equip(newData, newAmmo);
+            Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.Pickup);
         }
 
         /// <summary>같은 종류 무기를 들고 있을 때만 잔량을 더한다(투척 가시 회수 등). 실제로 더해진 수를 반환.</summary>

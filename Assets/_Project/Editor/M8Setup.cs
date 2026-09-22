@@ -1,3 +1,4 @@
+using Game.Audio;
 using Game.Core;
 using Game.UI;
 using UnityEditor;
@@ -28,8 +29,10 @@ namespace Game.Editor
             cam.orthographic = true;
             cam.orthographicSize = GameConstants.CameraOrthographicSize;
             camGo.AddComponent<FixedCamera>();
+            camGo.AddComponent<AudioListener>();
 
             new GameObject("TitleScreen").AddComponent<TitleScreen>();
+            new GameObject("SfxPlayer").AddComponent<SfxPlayer>();
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             M2Setup.SetBuildScenes();

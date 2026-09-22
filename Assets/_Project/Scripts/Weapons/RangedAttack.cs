@@ -30,6 +30,11 @@ namespace Game.Weapons
             {
                 float radius = GameConstants.FromScreenWidths(data.aggroRadiusInScreenWidths);
                 SoundEventBus.Publish(new SoundEvent(origin, radius, data.aggroSeconds));
+                Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.Shoot);
+            }
+            else
+            {
+                Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.Throw);
             }
 
             holder.ConsumeAmmo(1);

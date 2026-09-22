@@ -19,9 +19,15 @@ namespace Game.UI
             float w = 260f, h = 64f;
             float bx = (Screen.width - w) * 0.5f;
             if (GUI.Button(new Rect(bx, Screen.height * 0.55f, w, h), "시작", buttonStyle))
+            {
+                Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.UiClick);
                 StartGame();
+            }
             if (GUI.Button(new Rect(bx, Screen.height * 0.55f + 76f, w, h), "종료", buttonStyle))
+            {
+                Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.UiClick);
                 Application.Quit();
+            }
         }
 
         void StartGame()

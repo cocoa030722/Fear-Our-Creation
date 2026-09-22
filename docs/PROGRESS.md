@@ -1,6 +1,6 @@
 # PROGRESS
 
-마지막 갱신: 2026-09-22 · 현재 단계: **M0~M7 완료(사용자 확인), M8 진행 중**(일시정지/타이틀/피격 이펙트 구현+커밋+푸시 완료, 타이틀 글자색 버그 수정 포함. 사용자 플레이 확인 전). M4 상세: (뚱보, 폭발 오브젝트, 3스테이지, 복선 소품. 뚱보/폭발/종료 통화는 사용자 확인 완료, 3스테이지 전투 난이도는 추가 플레이 확인 필요)
+마지막 갱신: 2026-09-22 · 현재 단계: **M0~M7 완료(사용자 확인), M8 진행 중**(일시정지/타이틀/피격 이펙트 + 플레이스홀더 SFX 구현. 사용자 플레이 확인 전, 미커밋). M4 상세: (뚱보, 폭발 오브젝트, 3스테이지, 복선 소품. 뚱보/폭발/종료 통화는 사용자 확인 완료, 3스테이지 전투 난이도는 추가 플레이 확인 필요)
 
 ## 마일스톤 현황
 
@@ -14,7 +14,7 @@
 | M5 4스테이지 (4-1 사무실 + 4-2 배양실) | 완료 (사용자 플레이로 "정상 구현" 확인, 재시작 연출/슬로우 종료 방식 수정 반영. 커밋 ff82bef·4a8d9af·b87b485·184fbec) |
 | M6 5스테이지 보스전       | 완료 (사용자 플레이로 "정상 구현" 확인, 난이도 완화용 임시 권총은 확인 후 제거. 커밋 d0b7a95) |
 | M7 6스테이지 + 엔딩       | 완료 (사용자 플레이로 "정상 구현" 확인, 자폭 버튼을 누르면 모든 적이 그 자리에서 정지하도록 추가 반영) |
-| M8 폴리시·연출·사운드     | 진행 중 (일시정지 메뉴·타이틀 화면·피격 화면흔들림/플래시 구현, 사용자 플레이 확인 전. 사운드/문구 변주는 다음 단계) |
+| M8 폴리시·연출·사운드     | 진행 중 (일시정지 메뉴·타이틀 화면·피격 화면흔들림/플래시·플레이스홀더 SFX 구현, 사용자 플레이 확인 전. 문구 변주는 다음 단계) |
 | M9                        | 미착수  |
 
 ## M0 결과 (완료 기준 충족: 빈 씬에서 플레이어(원)가 카메라 안에 표시됨)
@@ -44,7 +44,7 @@ Game 뷰 캡처로 확인. 컴파일 에러 없음. 플레이어 지름이 화�
   - Pickup, SightBlocker: 충돌 없음(오버랩/레이캐스트 전용)
   - 커스텀 레이어와 Default 레이어 간 충돌도 끔
 
-## M8 결과 (진행 중: 일시정지/타이틀/피격 이펙트. 사용자 플레이 확인 전)
+## M8 결과 (진행 중: 일시정지/타이틀/피격 이펙트/플레이스홀더 SFX. 사용자 플레이 확인 전)
 
 개발계획 M8 절(폴리시·연출·사운드) 중 오디오 에셋이 필요 없는 항목부터 구현. 앰비언트 사운드, 안내방송, 문구 변주는 다음 단계로 남김.
 
@@ -58,7 +58,20 @@ Game 뷰 캡처로 확인. 컴파일 에러 없음. 플레이어 지름이 화�
 - 스모크 테스트(에디터 프레임 스텝, `eval_file`): `Player`에 `CameraShake`+`CinemachineImpulseSource`, `CM Player Follow`에 `CinemachineImpulseListener` 부착 확인 → `PauseMenu.SetPaused(true/false)` 호출 시 `Time.timeScale`이 0/1로 정확히 전환 확인(Esc 키 자체는 `EditorApplication.Step` 프레임 경계에서 InputSystem 이벤트가 결정적이지 않아 내부 메서드 직접 호출로 검증, 바인딩 자체는 Restart/Interact와 동일 패턴이라 별도 확인 안 함) → `PlayerHealth.TakeHit` 호출 직후 `_flashT`가 설정 값(0.25)으로 올라감 확인 → `Title` 씬 로드 후 `TitleScreen` 컴포넌트 존재 확인
 - **함정 (M8)**: `capture_game_view`는 카메라가 렌더한 픽셀만 캡처하고 OnGUI 오버레이(일시정지 박스/버튼, 타이틀 문구)는 찍히지 않는다(게임 뷰 합성 단계가 아니라 카메라 렌더 소스 캡처라서). OnGUI 레이아웃 확인은 사용자 플레이로만 가능
 - **버그 수정(사용자 확인 후)**: 타이틀 화면 글자가 `Color.white`로 지정돼 있었는데 배경도 흰색(`PlaceholderPalette.Background`)이라 흰 배경 위 흰 글자로 항상 보이지 않았다(마우스를 올려야 보인다는 증상은 에디터 Game 뷰 리페인트 특성으로 추정되나, 근본 원인은 색 대비 부재). `TitleScreen.cs`의 제목/버튼 글자색을 `PlaceholderPalette.Player`(어두운 슬레이트)로 바꾸고, 제목 48→72, 버튼 22→28로 글자 크기도 키움. 커밋 `a39a13d`, 푸시 완료(`e437d8f..a39a13d`)
-- 미확인/제한: 일시정지/타이틀 버튼 배치·글자 크기는 임시 OnGUI(정식 UI 전). 화면 흔들림 세기(`CameraShake.Shake()` 기본 force=1)와 피격 플래시 색/지속시간(0.25초)은 임시값. 앰비언트 사운드, "상황은 통제하에 있음" 문구 변주, 적 실루엣 가독성 점검, 통화/터미널 UI는 M8 남은 범위. `PauseMenu`의 "일시정지" 라벨과 기본 스킨 버튼 글자색은 이번에 손대지 않았음(같은 흰 배경 대비 문제가 있을 수 있어 다음 확인 대상)
+- 미확인/제한: 일시정지/타이틀 버튼 배치·글자 크기는 임시 OnGUI(정식 UI 전). 화면 흔들림 세기(`CameraShake.Shake()` 기본 force=1)와 피격 플래시 색/지속시간(0.25초)은 임시값. 앰비언트 사운드, "상황은 통제하에 있음" 문구 변주, 적 실루엣 가독성 점검, 통화/터미널 UI는 M8 남은 범위. `PauseMenu`의 "일시정지" 라벨과 기본 스킨 버튼 글자색은 이번에 손대지 않았음(같은 흰 배경 대비 문제가 있을 수 있어 다음 확인 대상). `EndingSequence.OnGUI`의 프롬프트/엔딩 문구도 `Color.white`라 같은 문제가 있을 수 있음(다음 확인 대상)
+
+### 플레이스홀더 SFX (사용자 요청: "사운드가 필요한 부분을 서로 구분되는 플레이스홀더 사운드로 구현")
+
+실제 오디오 에셋(.wav 등) 없이 `AudioClip.Create`로 파형을 코드 생성해 재생한다. `PlaceholderPalette`(색 규칙)의 오디오 버전. 기획서의 "사운드 방향"(앰비언트/무음 중심, 안내방송)은 실제 오디오 에셋이 있어야 하는 영역이라 이번 범위 밖이며, 여기서는 즉각적 피드백이 필요한 짧은 효과음 8종만 다룬다.
+
+- **`Audio/PlaceholderTone.cs`**: `Create(name, waveform, startFreq, endFreq, duration, volume)`. Sine/Square/Triangle/Noise 4파형 + 주파수 스윕 + 클릭 방지용 선형 엔벨로프(앞뒤 10%)로 `AudioClip`을 즉석 생성
+- **`Audio/Sfx.cs`**: 이벤트 8종 열거형(Shoot/Throw/MeleeSwing/PlayerHit/EnemyDeath/Explosion/Pickup/UiClick)
+- **`Audio/SfxPlayer.cs`**: 싱글턴. `AudioSource` 4개를 순환 사용(`PlayOneShot`)해 겹쳐 재생해도 끊기지 않음. 클립은 `Sfx`별로 파형/주파수/길이를 다르게 정의해 서로 구분되도록 하고(예: 권총 발사=짧은 고음 사각파, 피격=낮은 음 하강 사각파, 처치/폭발=노이즈지만 길이·음량이 다름, 습득=상승하는 사인파 차임, UI 클릭=짧은 고음 사인파) 한 번 생성한 클립은 캐싱
+- **호출 지점**: `RangedAttack.TryFire`(권총=Shoot, 그 외 투척=Throw), `MeleeAttack.TryAttack`(MeleeSwing), `EnemyBase.Kill`(EnemyDeath), `PlayerHealth.TakeHit`(PlayerHit), `ExplosionEffect.Show`(Explosion — `Detonate`/`ExplosiveProp` 양쪽이 공통으로 거치는 지점이라 폭탄알과 폭발 오브젝트 모두 커버), `WeaponHolder.TryInteract`의 두 성공 경로(Pickup), `PauseMenu`(토글+버튼 3개), `TitleScreen`(버튼 2개) 전부 UiClick
+- **배선 지점**: `SfxPlayer`는 `M2Setup.CreateRig()`(모든 스테이지·샌드박스 공유)와 `M8Setup`(Title 씬) 두 곳에 생성. 새 스테이지가 추가돼도 `Stage 1-6 Setup` 재실행만으로 전파됨
+- **버그 발견 및 수정**: 스모크 테스트 중 "There are no audio listeners in the scene" 경고 확인 — 프로젝트의 Main Camera 생성 코드(`M2Setup.CreateRig`, `M8Setup`)가 `AudioListener`를 붙이지 않고 있었음(에디터 UI로 카메라를 만들 때만 자동으로 붙는 컴포넌트라 스크립트 생성 시 누락됨, M0~M7 내내 사운드가 없어 발견되지 않았던 잠재 버그). 두 곳 모두 `camGo.AddComponent<AudioListener>()` 추가로 해결. M0_Sandbox(빌드 목록에 없는 구버전 샌드박스)는 그대로 둠
+- 스모크 테스트(에디터 프레임 스텝, `eval_file`): `editor_play`+`editor_pause` 후 Stage1 로드 → `SfxPlayer` 존재, `AudioSource` 4개 확인 → `Sfx` 8종 전부 `SfxPlayer.Play(id)` 직후 어느 한 소스가 `isPlaying=true`로 전환됨을 확인(AudioListener 수정 전에는 "no audio listener" 경고가 동시에 발생했고, 수정 후에는 경고 없이 재생만 확인됨) → `console_status`로 에러 0건 확인
+- 미확인/제한: 실제 재생 볼륨/음색이 "서로 구분되는" 수준으로 충분한지는 사람이 직접 들어야 확인 가능(자동 테스트는 `isPlaying` 전환만 검증). 정식 오디오 에셋으로 교체하는 절차는 아래 참고
 
 ## M7 결과 (완료: 6스테이지 + 엔딩. 사용자가 플레이로 "정상 구현" 확인)
 

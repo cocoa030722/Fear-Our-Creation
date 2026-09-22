@@ -44,6 +44,7 @@ namespace Game.Weapons
             if (prefab == null) return;
             var fx = Instantiate(prefab, center, Quaternion.identity);
             fx.Play(worldDiameter, color, lifetime);
+            Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.Explosion);
         }
 
         void Play(float worldDiameter, Color? color = null, float lifetime = 0f)

@@ -24,6 +24,7 @@ namespace Game.Player
             IsDead = true;
             if (body != null) body.color = deadColor;
             if (shake != null) shake.Shake();
+            Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.PlayerHit);
             _flashT = flashSeconds;
             Died?.Invoke();
         }
