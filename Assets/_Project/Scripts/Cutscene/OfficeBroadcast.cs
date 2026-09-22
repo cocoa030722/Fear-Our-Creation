@@ -19,7 +19,7 @@ namespace Game.Cutscene
         [Tooltip("플레이어가 이 반경(월드 유닛) 안에 들어오면 시작")]
         [SerializeField] float triggerRadius = 5f;
         [Tooltip("모니터에 뜨는 짧은 문구(모든 모니터 공통)")]
-        [SerializeField] string screenText = "상황은 통제하에\n있음";
+        [SerializeField] string screenText = "상황은\n통제하에\n있음";
         [Tooltip("화면 아래 자막으로 보여 주는 송신문 전문")]
         [TextArea] [SerializeField] string subtitle = "상황은 통제하에 있음. 지원은 필요하지 않음. 전 직원 안전 확인 완료";
         [SerializeField] float subtitleSeconds = 6f;
@@ -86,7 +86,7 @@ namespace Game.Cutscene
             var tm = go.AddComponent<TextMesh>();
             tm.font = font;
             tm.fontSize = 48;
-            tm.characterSize = 0.034f;
+            tm.characterSize = 0.03f;
             tm.anchor = TextAnchor.MiddleCenter;
             tm.alignment = TextAlignment.Center;
             tm.color = new Color32(0x2B, 0x3A, 0x42, 0xFF);
