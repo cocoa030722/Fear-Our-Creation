@@ -15,6 +15,9 @@ EditorBuildSettings:
     path: Assets/_Project/Scenes/Stage3.unity
     guid: 4991ae8ced250024c96ff2fcbe912e36
   - enabled: 1
+    path: Assets/_Project/Scenes/Stage4_1.unity
+    guid: 1e23104d62193c34da3e2b35633365cf
+  - enabled: 1
     path: Assets/_Project/Scenes/M4_Sandbox.unity
     guid: 0e3ddc4cb2676104ebb61b5039c8b471
   - enabled: 1

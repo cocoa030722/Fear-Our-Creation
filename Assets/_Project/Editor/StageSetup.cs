@@ -9,7 +9,7 @@ using UnityEngine;
 namespace Game.Editor
 {
     /// <summary>
-    /// 스테이지 씬 구성(1~3스테이지)과 벽 계열 프리팹(벽/화분/제어 패널). 여러 번 실행해도 안전(씬은 매번 새로 만든다).
+    /// 스테이지 씬 구성(1~4스테이지)과 벽 계열 프리팹(벽/화분/제어 패널). 여러 번 실행해도 안전(씬은 매번 새로 만든다).
     /// 벽 규칙은 Wall 레이어 하나로 통일되므로 화분·제어 패널도 프리팹의 겉모습만 다르다.
     /// 레이아웃을 바꿀 때는 이 스크립트를 수정한다(에디터에서 직접 고친 씬은 재실행 시 사라짐).
     /// </summary>
@@ -23,12 +23,13 @@ namespace Game.Editor
         internal const string Stage1Path = Root + "/Scenes/Stage1.unity";
         internal const string Stage2Path = Root + "/Scenes/Stage2.unity";
         internal const string Stage3Path = Root + "/Scenes/Stage3.unity";
+        internal const string Stage4_1Path = Root + "/Scenes/Stage4_1.unity";
 
         static readonly Color PlanterColor = new Color32(0x3F, 0xBF, 0x9F, 0xFF);
         static readonly Color PanelColor = new Color32(0x0E, 0x7C, 0x7C, 0xFF);
         static readonly Color TextColor = new Color32(0x2B, 0x3A, 0x42, 0xFF);
 
-        [MenuItem("Tools/Fear/Stage 1-3 Setup")]
+        [MenuItem("Tools/Fear/Stage 1-4 Setup")]
         public static void Run()
         {
             if (!M4Setup.EnsureAssets()) return;
@@ -36,10 +37,11 @@ namespace Game.Editor
             BuildStage1();
             BuildStage2();
             BuildStage3();
+            BuildStage4_1();
             M2Setup.SetBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[Stage] 셋업 완료: Stage1, Stage2, Stage3");
+            Debug.Log("[Stage] 셋업 완료: Stage1, Stage2, Stage3, Stage4_1");
         }
 
         // ---- 프리팹 ----------------------------------------------------------------------------------------
@@ -289,8 +291,8 @@ namespace Game.Editor
             goalGo.GetComponent<SpriteRenderer>().sortingOrder = -1;
             var goal = goalGo.AddComponent<StageGoal>();
             var goalSo = new SerializedObject(goal);
-            goalSo.FindProperty("nextSceneName").stringValue = "";
-            goalSo.FindProperty("message").stringValue = "Stage 3 Clear (M4 빌드의 끝)";
+            goalSo.FindProperty("nextSceneName").stringValue = "Stage4_1";
+            goalSo.FindProperty("message").stringValue = "사무실로 향한다";
             goalSo.FindProperty("manualTrigger").boolValue = true;
             goalSo.ApplyModifiedPropertiesWithoutUndo();
 
@@ -315,6 +317,104 @@ namespace Game.Editor
             Notice(new Vector2(9f, -8.55f), "[안내문] 비상 소각 시스템 - 최하층 제어반에서 작동. 작동 시 시설 내 전 인원의 대피를 확인하십시오.", square, unlit);
 
             EditorSceneManager.SaveScene(scene, Stage3Path);
+        }
+
+        // ---- 4스테이지 1: 사무실(무전투) --------------------------------------------------------------------
+
+        static void BuildStage4_1()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var player = M2Setup.CreateRig();
+            player.transform.position = new Vector3(-13f, 0f, 0f); // 사무실 입구
+
+            var wall = Load(WallPrefabPath);
+            new GameObject("NavGrid").AddComponent<NavGrid>();
+            Boundary(wall);
+
+            var square = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Sprites/Square.png");
+            var unlit = AssetDatabase.LoadAssetAtPath<Material>(Root + "/Art/Materials/SpriteUnlit.mat");
+            var screens = new System.Collections.Generic.List<SpriteRenderer>();
+            var tentacles = new System.Collections.Generic.List<Tentacle>();
+
+            // 책상 열: 위/아래 세 줄. 책상 = 벽(충돌), 모니터/키보드/전화기는 충돌 없는 그림. 복도(y 0 근처)는 비워 둔다
+            foreach (float y in new[] { 4.2f, -4.2f })
+            {
+                float towardLane = y > 0f ? -1f : 1f; // 키보드는 복도 쪽
+                foreach (float x in new[] { -8f, -3.5f, 1f })
+                {
+                    Prop(wall, $"Desk {x},{y}", new Vector2(x, y), new Vector2(2.4f, 1f));
+                    var monitor = M1Setup.CreateSprite("Monitor", square, unlit, PanelColor, new Vector2(x, y - towardLane * 0.1f), new Vector2(1f, 0.7f), 0);
+                    monitor.GetComponent<SpriteRenderer>().sortingOrder = 2;
+                    screens.Add(monitor.GetComponent<SpriteRenderer>());
+                    var keys = M1Setup.CreateSprite("Keyboard", square, unlit, new Color32(0x8F, 0xD6, 0xD6, 0xFF),
+                        new Vector2(x, y + towardLane * 0.85f), new Vector2(0.9f, 0.3f), 0);
+                    keys.GetComponent<SpriteRenderer>().sortingOrder = -1;
+                    tentacles.Add(OfficeTentacle(new Vector2(x + 1.45f, y), keys.transform.position, unlit));
+                }
+                // 전화기: 복도 오른쪽 책상 위
+                Prop(wall, $"Phone Desk {y}", new Vector2(6f, y), new Vector2(2.4f, 1f));
+                var phone = M1Setup.CreateSprite("Phone", square, unlit, PanelColor, new Vector2(6f, y), new Vector2(0.8f, 0.5f), 0);
+                phone.GetComponent<SpriteRenderer>().sortingOrder = 2;
+                tentacles.Add(OfficeTentacle(new Vector2(7.5f, y), new Vector2(6.3f, y), unlit));
+            }
+
+            // 인증 실패 로그 모니터 두 대: 오른쪽 끝의 큰 모니터. 가까이 가면 로그가 화면 아래에 뜬다
+            LogTerminal(wall, square, unlit, new Vector2(11.2f, 3f), "ERR: TUNNEL AUTH FAILED",
+                "[인증 로그] 지하터널 개방 요청 — 소장 인증 실패(반복 12회)\n[송신 기록] 외부 연락 기록 0건. 모든 송신문은 자동 재전송이다", screens);
+            LogTerminal(wall, square, unlit, new Vector2(11.2f, -3f), "ERR: NO EXTERNAL LINK",
+                "[송신 큐] 지원 요청은 처음부터 없었다. 지금까지의 연락은 전부 기만이었다\n[개방 시각] 터널 개방 예정: 진행 중 — 열리기 전에 막아야 한다", screens);
+
+            // 촉수/모니터 연출: 플레이어가 중앙에 다가서면 모든 모니터가 동시에 같은 송신문을 띄운다
+            var broadcast = new GameObject("Office Broadcast").AddComponent<OfficeBroadcast>();
+            broadcast.transform.position = new Vector2(-2f, 0f);
+            var so = new SerializedObject(broadcast);
+            var scr = so.FindProperty("screens");
+            scr.arraySize = screens.Count;
+            for (int i = 0; i < screens.Count; i++) scr.GetArrayElementAtIndex(i).objectReferenceValue = screens[i];
+            var ten = so.FindProperty("tentacles");
+            ten.arraySize = tentacles.Count;
+            for (int i = 0; i < tentacles.Count; i++) ten.GetArrayElementAtIndex(i).objectReferenceValue = tentacles[i];
+            so.FindProperty("triggerRadius").floatValue = 7f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            // 종점: 비상 엘리베이터(4-2 배양실로). 4-2 진입이 재시작 지점이 된다
+            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "비상 엘리베이터로 배양실로 내려간다 (4-2는 다음 커밋)", "", square, unlit);
+
+            Hint(new Vector2(-12f, 0f), 4f, "사무실을 지나 비상 엘리베이터로 가야 한다. 전화기와 컴퓨터마다 붉은 촉수가 얽혀 있다");
+            Hint(new Vector2(13.2f, 0f), 2.6f, "지하터널이 열리기 전에 막아야 한다. 비상 엘리베이터로 최하층까지 내려간다");
+
+            EditorSceneManager.SaveScene(scene, Stage4_1Path);
+        }
+
+        /// <summary>책상 옆에서 키보드/전화기를 향해 뻗는 짧은 촉수(Tentacle 재사용, 모든 촉수가 붉은색 = 적의 일부).</summary>
+        static Tentacle OfficeTentacle(Vector2 origin, Vector2 target, Material unlit)
+        {
+            var go = new GameObject("Office Tentacle");
+            go.transform.position = origin;
+            Vector2 dir = target - origin;
+            go.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f);
+            var lr = go.AddComponent<LineRenderer>();
+            lr.sharedMaterial = unlit;
+            lr.startColor = lr.endColor = PlaceholderPalette.Enemy;
+            lr.sortingOrder = 3;
+            lr.positionCount = 2;
+            var t = go.AddComponent<Tentacle>();
+            var so = new SerializedObject(t);
+            so.FindProperty("length").floatValue = dir.magnitude + 0.5f;
+            so.FindProperty("baseWidth").floatValue = 0.16f;
+            so.FindProperty("waveAmplitude").floatValue = 0.15f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return t;
+        }
+
+        static void LogTerminal(GameObject wall, Sprite square, Material unlit, Vector2 pos, string title, string log, System.Collections.Generic.List<SpriteRenderer> screens)
+        {
+            Prop(wall, "Log Desk", new Vector2(pos.x, pos.y), new Vector2(1.2f, 2.6f));
+            var monitor = M1Setup.CreateSprite("Log Monitor", square, unlit, PanelColor, new Vector2(pos.x, pos.y), new Vector2(0.7f, 1.8f), 0);
+            monitor.GetComponent<SpriteRenderer>().sortingOrder = 2;
+            AddLabel(monitor.transform, title);
+            screens.Add(monitor.GetComponent<SpriteRenderer>());
+            Hint(pos, 3.6f, log);
         }
 
         // ---- 공용 ------------------------------------------------------------------------------------------
