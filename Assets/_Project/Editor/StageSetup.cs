@@ -1,5 +1,6 @@
 using Game.Core;
 using Game.Cutscene;
+using Game.Enemies;
 using Game.UI;
 using Game.World;
 using UnityEditor;
@@ -24,6 +25,7 @@ namespace Game.Editor
         internal const string Stage2Path = Root + "/Scenes/Stage2.unity";
         internal const string Stage3Path = Root + "/Scenes/Stage3.unity";
         internal const string Stage4_1Path = Root + "/Scenes/Stage4_1.unity";
+        internal const string Stage4_2Path = Root + "/Scenes/Stage4_2.unity";
 
         static readonly Color PlanterColor = new Color32(0x3F, 0xBF, 0x9F, 0xFF);
         static readonly Color PanelColor = new Color32(0x0E, 0x7C, 0x7C, 0xFF);
@@ -38,10 +40,11 @@ namespace Game.Editor
             BuildStage2();
             BuildStage3();
             BuildStage4_1();
+            BuildStage4_2();
             M2Setup.SetBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[Stage] 셋업 완료: Stage1, Stage2, Stage3, Stage4_1");
+            Debug.Log("[Stage] 셋업 완료: Stage1, Stage2, Stage3, Stage4_1, Stage4_2");
         }
 
         // ---- 프리팹 ----------------------------------------------------------------------------------------
@@ -378,7 +381,7 @@ namespace Game.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
 
             // 종점: 비상 엘리베이터(4-2 배양실로). 4-2 진입이 재시작 지점이 된다
-            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "비상 엘리베이터로 배양실로 내려간다 (4-2는 다음 커밋)", "", square, unlit);
+            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "비상 엘리베이터로 배양실로 내려간다", "Stage4_2", square, unlit);
 
             Hint(new Vector2(-12f, 0f), 4f, "사무실을 지나 비상 엘리베이터로 가야 한다. 전화기와 컴퓨터마다 붉은 촉수가 얽혀 있다");
             Hint(new Vector2(13.2f, 0f), 2.6f, "지하터널이 열리기 전에 막아야 한다. 비상 엘리베이터로 최하층까지 내려간다");
@@ -415,6 +418,132 @@ namespace Game.Editor
             AddLabel(monitor.transform, title);
             screens.Add(monitor.GetComponent<SpriteRenderer>());
             Hint(pos, 3.6f, log);
+        }
+
+        // ---- 4스테이지 2: 배양실(전투) ----------------------------------------------------------------------
+
+        static void BuildStage4_2()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var player = M2Setup.CreateRig();
+            player.transform.position = new Vector3(-13f, 0f, 0f); // 엘리베이터에서 내린 지점. 재시작 지점은 여기(4-1 연출 없음)
+
+            var wall = Load(WallPrefabPath);
+            var planter = Load(PlanterPrefabPath);
+            new GameObject("NavGrid").AddComponent<NavGrid>();
+            Boundary(wall);
+
+            var square = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Sprites/Square.png");
+            var circle = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Sprites/Circle.png");
+            var unlit = AssetDatabase.LoadAssetAtPath<Material>(Root + "/Art/Materials/SpriteUnlit.mat");
+            var catalog = AssetDatabase.LoadAssetAtPath<Game.Weapons.WeaponCatalog>(Root + "/Data/Weapons/WeaponCatalog.asset");
+            var pistol = catalog.Find("pistol");
+
+            var grunt = Load(M3Setup.SpearGruntPrefabPath);
+            var thrower = Load(M3Setup.ThrowerPrefabPath);
+            var fatty = Load(M4Setup.FattyPrefabPath);
+            var grenadier = Load(M3Setup.GrenadierPrefabPath);
+
+            // 유리 수조: 복도 양옆(위/아래)에 세 개씩. 시작 지점에서 멀리 떨어져 있다(x 1~11, 시작은 x -13)
+            // 수조마다 적 두 명이 들어 있다. 구성은 M9에서 조정하기 쉽게 이 표 한 곳에서 바꾼다
+            float[] tankXs = { 1f, 6f, 11f };
+            var topKinds = new[] { (grunt, grunt), (thrower, grenadier), (fatty, grunt) };
+            var bottomKinds = new[] { (grunt, thrower), (grenadier, fatty), (thrower, grunt) };
+            var tankList = new System.Collections.Generic.List<(SpriteRenderer glass, Collider2D col, EnemyBase[] enemies)>();
+            for (int i = 0; i < tankXs.Length; i++)
+            {
+                tankList.Add(Tank($"Tank Top {i + 1}", new Vector2(tankXs[i], 4.6f), 180f, topKinds[i].Item1, topKinds[i].Item2, wall));
+                tankList.Add(Tank($"Tank Bottom {i + 1}", new Vector2(tankXs[i], -4.6f), 0f, bottomKinds[i].Item1, bottomKinds[i].Item2, wall));
+            }
+
+            // 세척수 탱크(지름 6배 폭발): 수조 바로 앞 복도 가장자리. 쏘면 나오는 적 무리를 한꺼번에 쓸어 낸다. 플레이어도 죽는다
+            var washTank = Load(M4Setup.WashTankPrefabPath);
+            M4Setup.PlaceProp(washTank, "Wash Tank 1", new Vector2(1f, 2.3f));
+            M4Setup.PlaceProp(washTank, "Wash Tank 2", new Vector2(6f, -2.3f));
+            M4Setup.PlaceProp(washTank, "Wash Tank 3", new Vector2(11f, 2.3f));
+
+            // 엄폐물(화분 = 벽): 시작 구역과 복도 중간
+            foreach (var (name, pos) in new (string, Vector2)[]
+            {
+                ("Planter A", new Vector2(-6f, 2.2f)), ("Planter B", new Vector2(-6f, -2.2f)),
+                ("Planter C", new Vector2(3.5f, -2.6f)), ("Planter D", new Vector2(8.5f, 2.6f)),
+            })
+                Prop(planter, name, pos, Vector2.one * 1.2f);
+
+            // 경비병 시신 4곳(권총 탄창 보급): 진입 직후, 세척수 탱크 구역, 중앙 통로, 엘리베이터 앞
+            Corpse("Guard Corpse Entry", new Vector2(-10.5f, 2.5f), pistol, circle, unlit);
+            Corpse("Guard Corpse Wash Tank Zone", new Vector2(3.5f, 0.3f), pistol, circle, unlit);
+            Corpse("Guard Corpse Center", new Vector2(8.5f, -0.2f), pistol, circle, unlit);
+            Corpse("Guard Corpse Elevator", new Vector2(12.5f, -1.5f), pistol, circle, unlit);
+
+            // 기습 연출: 플레이어가 x -7을 넘으면 카메라가 수조를 비추고 슬로우모션 → 유리가 깨지고 적이 달려든다
+            var focus = new GameObject("CM Tank Focus");
+            focus.transform.position = new Vector3(6f, 0f, -10f);
+            var vcam = focus.AddComponent<Unity.Cinemachine.CinemachineCamera>();
+            var lens = vcam.Lens;
+            lens.OrthographicSize = 8f; // 양옆 수조가 모두 보이도록 넓게 비춤(연출 전용)
+            vcam.Lens = lens;
+            var pri = vcam.Priority;
+            pri.Enabled = true;
+            pri.Value = 20;
+            vcam.Priority = pri;
+            focus.SetActive(false);
+
+            var ambush = new GameObject("Tank Ambush").AddComponent<TankAmbush>();
+            var so = new SerializedObject(ambush);
+            var arr = so.FindProperty("tanks");
+            arr.arraySize = tankList.Count;
+            for (int i = 0; i < tankList.Count; i++)
+            {
+                var e = arr.GetArrayElementAtIndex(i);
+                e.FindPropertyRelative("glass").objectReferenceValue = tankList[i].glass;
+                e.FindPropertyRelative("glassCollider").objectReferenceValue = tankList[i].col;
+                var es = e.FindPropertyRelative("enemies");
+                es.arraySize = tankList[i].enemies.Length;
+                for (int j = 0; j < es.arraySize; j++) es.GetArrayElementAtIndex(j).objectReferenceValue = tankList[i].enemies[j];
+            }
+            so.FindProperty("focusCamera").objectReferenceValue = vcam;
+            so.FindProperty("triggerX").floatValue = -7f;
+            so.FindProperty("shardSprite").objectReferenceValue = square;
+            so.FindProperty("shardMaterial").objectReferenceValue = unlit;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            // 종점: 비상 엘리베이터(5스테이지는 M6). 다음 씬이 없어 클리어 문구만 표시
+            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "Stage 4 Clear (M5 빌드의 끝)", "", square, unlit);
+
+            Hint(new Vector2(-12f, 0f), 4.5f, "배양실: 시신 곁의 권총 위에서 스페이스로 탄창을 얻습니다. 좌클릭을 누르면 연사됩니다");
+            Hint(new Vector2(-1f, 0f), 4f, "척탄병(노란 점)은 폭탄알을 던집니다. 벽 뒤에 숨으면 폭발을 막을 수 있습니다");
+            Hint(new Vector2(6f, 0f), 3.5f, "노란 표식의 세척수 탱크는 넓게 폭발합니다 - 적 무리도, 플레이어도 즉사합니다");
+
+            EditorSceneManager.SaveScene(scene, Stage4_2Path);
+        }
+
+        /// <summary>유리 수조 하나와 그 안의 적 두 명. 수조 유리는 Wall 레이어(투사체/폭발/시야 차단), 적은 복도를 향해 서 있다.</summary>
+        static (SpriteRenderer, Collider2D, EnemyBase[]) Tank(string name, Vector2 pos, float enemyAngle, GameObject left, GameObject right, GameObject wall)
+        {
+            var glass = Prop(wall, name, pos, new Vector2(3f, 2.2f));
+            var sr = glass.GetComponent<SpriteRenderer>();
+            sr.color = new Color32(0x8F, 0xD6, 0xD6, 0x59);
+            sr.sortingOrder = 4;
+            var enemies = new EnemyBase[2];
+            var prefabs = new[] { left, right };
+            for (int i = 0; i < 2; i++)
+            {
+                var go = (GameObject)PrefabUtility.InstantiatePrefab(prefabs[i]);
+                go.name = $"{name} Enemy {i + 1}";
+                go.transform.position = pos + new Vector2(i == 0 ? -0.75f : 0.75f, 0f);
+                go.transform.rotation = Quaternion.Euler(0f, 0f, enemyAngle);
+                enemies[i] = go.GetComponent<EnemyBase>();
+            }
+            return (sr, glass.GetComponent<Collider2D>(), enemies);
+        }
+
+        /// <summary>경비병 시신(회색 플레이스홀더) 위에 권총 탄창을 놓는다. 시신 시스템이 생기기 전까지의 대체 구현.</summary>
+        static void Corpse(string name, Vector2 pos, Game.Weapons.WeaponData pistol, Sprite circle, Material unlit)
+        {
+            var body = M1Setup.CreateSprite(name, circle, unlit, new Color32(0x6B, 0x7A, 0x82, 0xFF), pos, new Vector2(1.3f, 0.8f), 0);
+            body.GetComponent<SpriteRenderer>().sortingOrder = -1;
+            M3Setup.PlacePickup(pistol, pos);
         }
 
         // ---- 공용 ------------------------------------------------------------------------------------------

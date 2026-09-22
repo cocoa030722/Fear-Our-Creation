@@ -37,6 +37,10 @@ namespace Game.Enemies
         EnemyAttack _attack;
         Rigidbody2D _rb;
 
+        bool _started;
+        Vector2 _pendingAlertPoint;
+        float _pendingAlertSeconds;
+
         EnemyState _state;
         Vector2 _home;
         float _homeAngle;
@@ -77,6 +81,8 @@ namespace Game.Enemies
             _home = transform.position;
             _homeAngle = transform.eulerAngles.z;
             SetState(EnemyState.Idle);
+            _started = true;
+            if (_pendingAlertSeconds > 0f) AlertTo(_pendingAlertPoint, _pendingAlertSeconds); // 깨어나자마자 받은 경계 요청
         }
 
         void OnDied()
@@ -92,6 +98,22 @@ namespace Game.Enemies
             if (_enemy.IsDead || _state == EnemyState.Chase || _state == EnemyState.Attack) return;
             _alertPoint = e.Position;
             _alertUntil = Time.time + e.DurationSeconds;
+            SetState(EnemyState.Alert);
+        }
+
+        /// <summary>외부 연출(수조 기습 등)이 경계 상태를 부여한다: point로 이동하며 seconds 동안 경계, 시야에 잡히면 추격.</summary>
+        public void AlertTo(Vector2 point, float seconds)
+        {
+            if (_enemy.IsDead) return;
+            if (!_started) // 비활성 상태에서 막 켜진 경우: Start가 Idle로 덮어쓰지 않도록 보류한다
+            {
+                _pendingAlertPoint = point;
+                _pendingAlertSeconds = seconds;
+                return;
+            }
+            _pendingAlertSeconds = 0f;
+            _alertPoint = point;
+            _alertUntil = Time.time + seconds;
             SetState(EnemyState.Alert);
         }
 
