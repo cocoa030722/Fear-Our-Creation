@@ -27,15 +27,16 @@ namespace Game.Editor
         internal const string Stage4_1Path = Root + "/Scenes/Stage4_1.unity";
         internal const string Stage4_2Path = Root + "/Scenes/Stage4_2.unity";
         internal const string Stage5Path = Root + "/Scenes/Stage5.unity";
+        internal const string Stage6Path = Root + "/Scenes/Stage6.unity";
 
         static readonly Color PlanterColor = new Color32(0x3F, 0xBF, 0x9F, 0xFF);
         static readonly Color PanelColor = new Color32(0x0E, 0x7C, 0x7C, 0xFF);
         static readonly Color TextColor = new Color32(0x2B, 0x3A, 0x42, 0xFF);
 
-        [MenuItem("Tools/Fear/Stage 1-5 Setup")]
+        [MenuItem("Tools/Fear/Stage 1-6 Setup")]
         public static void Run()
         {
-            if (!M6Setup.EnsureAssets()) return;
+            if (!M7Setup.EnsureAssets()) return;
             EnsurePropPrefabs();
             BuildStage1();
             BuildStage2();
@@ -43,10 +44,11 @@ namespace Game.Editor
             BuildStage4_1();
             BuildStage4_2();
             BuildStage5();
+            BuildStage6();
             M2Setup.SetBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[Stage] 셋업 완료: Stage1, Stage2, Stage3, Stage4_1, Stage4_2, Stage5");
+            Debug.Log("[Stage] 셋업 완료: Stage1, Stage2, Stage3, Stage4_1, Stage4_2, Stage5, Stage6");
         }
 
         // ---- 프리팹 ----------------------------------------------------------------------------------------
@@ -597,13 +599,13 @@ namespace Game.Editor
             boss.transform.rotation = Quaternion.Euler(0f, 0f, 90f); // 왼쪽(플레이어 쪽)을 보고 있음
             var bossComp = boss.GetComponent<Boss>();
 
-            // 종점: 보스를 쓰러뜨리면 Boss.Kill()이 Trigger()를 호출한다(6스테이지는 M7이라 다음 씬 없음)
+            // 종점: 보스를 쓰러뜨리면 Boss.Kill()이 Trigger()를 호출해 6스테이지로 이동한다
             var goalGo = M1Setup.CreateSprite("Boss Clear Goal", square, unlit, PanelColor, boss.transform.position, Vector2.one, 0);
             goalGo.GetComponent<SpriteRenderer>().sortingOrder = -1;
             var goal = goalGo.AddComponent<StageGoal>();
             var goalSo = new SerializedObject(goal);
-            goalSo.FindProperty("nextSceneName").stringValue = "";
-            goalSo.FindProperty("message").stringValue = "보스를 쓰러뜨렸다 (M6 빌드의 끝)";
+            goalSo.FindProperty("nextSceneName").stringValue = "Stage6";
+            goalSo.FindProperty("message").stringValue = "비상 소각 구역으로 향한다";
             goalSo.FindProperty("manualTrigger").boolValue = true;
             goalSo.ApplyModifiedPropertiesWithoutUndo();
 
@@ -656,6 +658,72 @@ namespace Game.Editor
         }
 
         static Transform CatwalkPoint(string name, Vector2 pos)
+        {
+            var go = new GameObject(name);
+            go.transform.position = pos;
+            return go.transform;
+        }
+
+        // ---- 6스테이지: 소각 구역(엔딩) ----------------------------------------------------------------------
+
+        static void BuildStage6()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var player = M2Setup.CreateRig();
+            player.transform.position = new Vector3(-13f, 0f, 0f);
+
+            // 진입 시 무기를 제거하고 그 상태로 스냅샷 저장(기획: 6스테이지 설계 결정, 재시작해도 맨손 유지)
+            var restart = Object.FindAnyObjectByType<RestartController>();
+            var restartSo = new SerializedObject(restart);
+            restartSo.FindProperty("disarmOnEntry").boolValue = true;
+            restartSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var wall = Load(WallPrefabPath);
+            new GameObject("NavGrid").AddComponent<NavGrid>();
+            Boundary(wall);
+
+            // 깔때기 모양: 위/아래 벽이 오른쪽으로 갈수록 서로 가까워진다(단차형, 기존 축 정렬 벽 스타일 그대로)
+            float[] xBounds = { -13f, -7f, -1f, 5f, 11f, 15f };
+            float[] halfHeights = { 8f, 6.5f, 5f, 3.5f, 2f };
+            for (int i = 0; i < halfHeights.Length; i++)
+            {
+                float xMid = (xBounds[i] + xBounds[i + 1]) * 0.5f;
+                float width = xBounds[i + 1] - xBounds[i];
+                float half = halfHeights[i];
+                Prop(wall, $"Funnel Top {i + 1}", new Vector2(xMid, half + 0.25f), new Vector2(width, 0.5f));
+                Prop(wall, $"Funnel Bottom {i + 1}", new Vector2(xMid, -half - 0.25f), new Vector2(width, 0.5f));
+            }
+
+            // 무한 스폰 가시 창병(노획 불가): 왼쪽(플레이어 뒤)에서 계속 나와 오른쪽으로 밀어붙인다
+            var funnelGrunt = Load(M7Setup.FunnelGruntPrefabPath);
+            var spawnPoints = new[]
+            {
+                SpawnPoint("Funnel Spawn 1", new Vector2(-11f, 5f)),
+                SpawnPoint("Funnel Spawn 2", new Vector2(-11f, 2f)),
+                SpawnPoint("Funnel Spawn 3", new Vector2(-11f, -2f)),
+                SpawnPoint("Funnel Spawn 4", new Vector2(-11f, -5f)),
+            };
+            var spawner = new GameObject("Funnel Spawner").AddComponent<FunnelSpawner>();
+            var spawnerSo = new SerializedObject(spawner);
+            spawnerSo.FindProperty("enemyPrefab").objectReferenceValue = funnelGrunt;
+            var pts = spawnerSo.FindProperty("spawnPoints");
+            pts.arraySize = spawnPoints.Length;
+            for (int i = 0; i < spawnPoints.Length; i++) pts.GetArrayElementAtIndex(i).objectReferenceValue = spawnPoints[i];
+            spawnerSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // 종점: 비상 소각 버튼(스페이스 상호작용). 다음 씬 없음(게임의 끝)
+            var square = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Sprites/Square.png");
+            var unlit = AssetDatabase.LoadAssetAtPath<Material>(Root + "/Art/Materials/SpriteUnlit.mat");
+            var button = M1Setup.CreateSprite("Self-Destruct Button", square, unlit, PlaceholderPalette.Hazard, new Vector2(13f, 0f), new Vector2(1f, 1f), 0);
+            AddLabel(button.transform, "Button");
+            button.AddComponent<EndingSequence>();
+
+            Hint(new Vector2(-12f, 0f), 4f, "가시 창병 떼가 끝없이 몰려온다. 이길 수 없다 - 오른쪽 비상 소각 버튼으로 향해야 한다");
+
+            EditorSceneManager.SaveScene(scene, Stage6Path);
+        }
+
+        static Transform SpawnPoint(string name, Vector2 pos)
         {
             var go = new GameObject(name);
             go.transform.position = pos;
