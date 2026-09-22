@@ -26,25 +26,27 @@ namespace Game.Editor
         internal const string Stage3Path = Root + "/Scenes/Stage3.unity";
         internal const string Stage4_1Path = Root + "/Scenes/Stage4_1.unity";
         internal const string Stage4_2Path = Root + "/Scenes/Stage4_2.unity";
+        internal const string Stage5Path = Root + "/Scenes/Stage5.unity";
 
         static readonly Color PlanterColor = new Color32(0x3F, 0xBF, 0x9F, 0xFF);
         static readonly Color PanelColor = new Color32(0x0E, 0x7C, 0x7C, 0xFF);
         static readonly Color TextColor = new Color32(0x2B, 0x3A, 0x42, 0xFF);
 
-        [MenuItem("Tools/Fear/Stage 1-4 Setup")]
+        [MenuItem("Tools/Fear/Stage 1-5 Setup")]
         public static void Run()
         {
-            if (!M4Setup.EnsureAssets()) return;
+            if (!M6Setup.EnsureAssets()) return;
             EnsurePropPrefabs();
             BuildStage1();
             BuildStage2();
             BuildStage3();
             BuildStage4_1();
             BuildStage4_2();
+            BuildStage5();
             M2Setup.SetBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[Stage] 셋업 완료: Stage1, Stage2, Stage3, Stage4_1, Stage4_2");
+            Debug.Log("[Stage] 셋업 완료: Stage1, Stage2, Stage3, Stage4_1, Stage4_2, Stage5");
         }
 
         // ---- 프리팹 ----------------------------------------------------------------------------------------
@@ -508,8 +510,8 @@ namespace Game.Editor
             so.FindProperty("shardMaterial").objectReferenceValue = unlit;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            // 종점: 비상 엘리베이터(5스테이지는 M6). 다음 씬이 없어 클리어 문구만 표시
-            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "Stage 4 Clear (M5 빌드의 끝)", "", square, unlit);
+            // 종점: 비상 엘리베이터로 보스전(5스테이지)으로. 재시작 지점은 4-2 시작 그대로(5스테이지는 별도 재시작 지점)
+            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "최하층으로 내려간다", "Stage5", square, unlit);
 
             Hint(new Vector2(-12f, 0f), 4.5f, "배양실: 시신 곁의 권총 위에서 스페이스로 탄창을 얻습니다. 좌클릭을 누르면 연사됩니다");
             Hint(new Vector2(-1f, 0f), 4f, "척탄병(노란 점)은 폭탄알을 던집니다. 벽 뒤에 숨으면 폭발을 막을 수 있습니다");
@@ -544,6 +546,120 @@ namespace Game.Editor
             var body = M1Setup.CreateSprite(name, circle, unlit, new Color32(0x6B, 0x7A, 0x82, 0xFF), pos, new Vector2(1.3f, 0.8f), 0);
             body.GetComponent<SpriteRenderer>().sortingOrder = -1;
             M3Setup.PlacePickup(pistol, pos);
+        }
+
+        // ---- 5스테이지: 보스전 -------------------------------------------------------------------------------
+
+        static void BuildStage5()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var player = M2Setup.CreateRig();
+            player.transform.position = new Vector3(-13f, 0f, 0f); // 엘리베이터에서 내린 지점. 재시작 지점은 여기
+
+            var wall = Load(WallPrefabPath);
+            var panel = Load(PanelPrefabPath);
+            new GameObject("NavGrid").AddComponent<NavGrid>();
+            Boundary(wall);
+
+            var square = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Sprites/Square.png");
+            var circle = AssetDatabase.LoadAssetAtPath<Sprite>(Root + "/Art/Sprites/Circle.png");
+            var unlit = AssetDatabase.LoadAssetAtPath<Material>(Root + "/Art/Materials/SpriteUnlit.mat");
+
+            // 살해당하는 직원(플레이스홀더): 입구 근처, 소장이 등돌아보지 않고 베어 넘긴다(연출은 BossIntro)
+            var employee = M1Setup.CreateSprite("Employee", circle, unlit, new Color32(0xA0, 0xB4, 0xB8, 0xFF), new Vector2(-9f, 1.6f), Vector2.one * 0.9f, 0);
+            var employeeSr = employee.GetComponent<SpriteRenderer>();
+
+            // 키카드 더미(복선 소품, 충돌 없음): 인증 없이 터널을 열려 한 흔적
+            var keycards = M1Setup.CreateSprite("Keycard Pile", square, unlit, PlaceholderPalette.LabObject, new Vector2(-10.5f, -2f), new Vector2(0.7f, 0.4f), 0);
+            keycards.GetComponent<SpriteRenderer>().sortingOrder = -1;
+
+            // 배치: 플레이어 - 벽(제어 패널, 가운데 통로는 비워 둠) - 잡몹(캣워크에서 합류) - 보스
+            Prop(panel, "Control Panel Upper", new Vector2(-2f, 3f), new Vector2(0.6f, 4.2f));
+            Prop(panel, "Control Panel Lower", new Vector2(-2f, -3f), new Vector2(0.6f, 4.2f));
+
+            // 잡몹 소환 지점(캣워크 경로): 위/아래 가장자리를 따라 보스 쪽에서 합류
+            var summonPoints = new[]
+            {
+                CatwalkPoint("Summon Top A", new Vector2(4f, 7.4f)),
+                CatwalkPoint("Summon Top B", new Vector2(9f, 7.4f)),
+                CatwalkPoint("Summon Bottom A", new Vector2(4f, -7.4f)),
+                CatwalkPoint("Summon Bottom B", new Vector2(9f, -7.4f)),
+            };
+
+            var grunt = Load(M3Setup.SpearGruntPrefabPath);
+            var grenadier = Load(M3Setup.GrenadierPrefabPath);
+            var summonPrefabs = new[] { grunt, grunt, grunt, grenadier }; // 기획: 가시 창병 위주, 척탄병 최대 1기
+
+            // 보스: 사무실/배양실 반대편 끝. 진입 시에는 인간(슬레이트색)이며 BossIntro가 공개 순간 붉은색으로 바꾼다
+            var boss = (GameObject)PrefabUtility.InstantiatePrefab(Load(M6Setup.BossPrefabPath));
+            boss.name = "Boss";
+            boss.transform.position = new Vector2(12f, 0f);
+            boss.transform.rotation = Quaternion.Euler(0f, 0f, 90f); // 왼쪽(플레이어 쪽)을 보고 있음
+            var bossComp = boss.GetComponent<Boss>();
+
+            // 종점: 보스를 쓰러뜨리면 Boss.Kill()이 Trigger()를 호출한다(6스테이지는 M7이라 다음 씬 없음)
+            var goalGo = M1Setup.CreateSprite("Boss Clear Goal", square, unlit, PanelColor, boss.transform.position, Vector2.one, 0);
+            goalGo.GetComponent<SpriteRenderer>().sortingOrder = -1;
+            var goal = goalGo.AddComponent<StageGoal>();
+            var goalSo = new SerializedObject(goal);
+            goalSo.FindProperty("nextSceneName").stringValue = "";
+            goalSo.FindProperty("message").stringValue = "보스를 쓰러뜨렸다 (M6 빌드의 끝)";
+            goalSo.FindProperty("manualTrigger").boolValue = true;
+            goalSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var bossSo = new SerializedObject(bossComp);
+            var sp = bossSo.FindProperty("summonPrefabs");
+            sp.arraySize = summonPrefabs.Length;
+            for (int i = 0; i < summonPrefabs.Length; i++) sp.GetArrayElementAtIndex(i).objectReferenceValue = summonPrefabs[i];
+            var pts = bossSo.FindProperty("summonPoints");
+            pts.arraySize = summonPoints.Length;
+            for (int i = 0; i < summonPoints.Length; i++) pts.GetArrayElementAtIndex(i).objectReferenceValue = summonPoints[i];
+            bossSo.FindProperty("goalOnDeath").objectReferenceValue = goal;
+            bossSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // 공개 연출용 촉수(보스 몸에서 사방으로 뻗음, 붉은색 = 적의 일부)
+            var tentacles = new Tentacle[4];
+            float[] angles = { 20f, 100f, 200f, 300f };
+            for (int i = 0; i < angles.Length; i++)
+            {
+                var t = new GameObject($"Boss Tentacle {i + 1}");
+                t.transform.SetParent(boss.transform, false);
+                t.transform.localPosition = Vector3.zero;
+                t.transform.localRotation = Quaternion.Euler(0f, 0f, angles[i]);
+                var lr = t.AddComponent<LineRenderer>();
+                lr.sharedMaterial = unlit;
+                lr.startColor = lr.endColor = PlaceholderPalette.Enemy;
+                lr.sortingOrder = 3;
+                lr.positionCount = 2;
+                var tc = t.AddComponent<Tentacle>();
+                var tso = new SerializedObject(tc);
+                tso.FindProperty("length").floatValue = 1.6f;
+                tso.FindProperty("baseWidth").floatValue = 0.14f;
+                tso.FindProperty("waveAmplitude").floatValue = 0.2f;
+                tso.ApplyModifiedPropertiesWithoutUndo();
+                tentacles[i] = tc;
+            }
+
+            var intro = new GameObject("Boss Intro").AddComponent<BossIntro>();
+            var introSo = new SerializedObject(intro);
+            introSo.FindProperty("boss").objectReferenceValue = bossComp;
+            introSo.FindProperty("employeeBody").objectReferenceValue = employeeSr;
+            var tarr = introSo.FindProperty("tentacles");
+            tarr.arraySize = tentacles.Length;
+            for (int i = 0; i < tentacles.Length; i++) tarr.GetArrayElementAtIndex(i).objectReferenceValue = tentacles[i];
+            introSo.ApplyModifiedPropertiesWithoutUndo();
+
+            Hint(new Vector2(-12f, 0f), 4f, "소장이 진짜 모습을 드러냈다. 제어 패널 뒤에 숨으면 보스의 사격을 막을 수 있다");
+            Hint(new Vector2(-2f, 5f), 3f, "보스는 잡몹을 부른다. 호출하는 동안(몸이 부풀 때)은 사격하지 않는다 - 접근 기회");
+
+            EditorSceneManager.SaveScene(scene, Stage5Path);
+        }
+
+        static Transform CatwalkPoint(string name, Vector2 pos)
+        {
+            var go = new GameObject(name);
+            go.transform.position = pos;
+            return go.transform;
         }
 
         // ---- 공용 ------------------------------------------------------------------------------------------

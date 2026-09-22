@@ -1,3 +1,4 @@
+using Game.Weapons;
 using UnityEngine;
 
 namespace Game.Core
@@ -15,14 +16,17 @@ namespace Game.Core
         public readonly bool IsBombShell;
         public readonly Vector2 Point;
         public readonly Vector2 Direction;
+        /// <summary>가해 무기(보스 피해량 가중치 계산용, WeaponData.bossDamage). 무기 없는 피해(폭발 오브젝트 연쇄 등)는 null.</summary>
+        public readonly WeaponData Weapon;
 
-        public HitInfo(HitSource source, HitKind kind, Vector2 point, Vector2 direction, bool isBombShell = false)
+        public HitInfo(HitSource source, HitKind kind, Vector2 point, Vector2 direction, bool isBombShell = false, WeaponData weapon = null)
         {
             Source = source;
             Kind = kind;
             Point = point;
             Direction = direction;
             IsBombShell = isBombShell;
+            Weapon = weapon;
         }
     }
 

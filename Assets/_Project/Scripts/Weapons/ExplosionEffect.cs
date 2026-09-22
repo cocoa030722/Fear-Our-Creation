@@ -34,7 +34,7 @@ namespace Game.Weapons
                 Vector2 point = col.ClosestPoint(center);
                 if (WallQuery.IsBlocked(center, point)) continue;
                 Vector2 dir = (point - center).sqrMagnitude > 0.0001f ? (point - center).normalized : Vector2.up;
-                target.TakeHit(new HitInfo(source, HitKind.Explosion, point, dir, isBombShell: true));
+                target.TakeHit(new HitInfo(source, HitKind.Explosion, point, dir, isBombShell: true, weapon: data));
             }
         }
 

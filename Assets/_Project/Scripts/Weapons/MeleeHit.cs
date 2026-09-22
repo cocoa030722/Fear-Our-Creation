@@ -54,7 +54,7 @@ namespace Game.Weapons
                 }
                 if (WallQuery.IsBlocked(origin, point)) continue;
 
-                target.TakeHit(new HitInfo(source, HitKind.Melee, point, forward));
+                target.TakeHit(new HitInfo(source, HitKind.Melee, point, forward, weapon: data));
                 hits++;
             }
             return hits;

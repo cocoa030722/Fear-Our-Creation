@@ -85,7 +85,7 @@ namespace Game.Weapons
                 Explode(point - _dir * 0.05f);
                 return;
             }
-            target.TakeHit(new HitInfo(_source, HitKind.Projectile, point, _dir));
+            target.TakeHit(new HitInfo(_source, HitKind.Projectile, point, _dir, weapon: _data));
             if (_data.kind == WeaponKind.Thrown && _source == HitSource.Player && Random.value < _data.hitRecoverChance) DropRecoverable(point);
             Destroy(gameObject);
         }
