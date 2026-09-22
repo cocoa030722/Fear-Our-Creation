@@ -1,6 +1,6 @@
 # PROGRESS
 
-마지막 갱신: 2026-09-22 · 현재 단계: **M0~M7 완료(사용자 확인)**. M4 상세: (뚱보, 폭발 오브젝트, 3스테이지, 복선 소품. 뚱보/폭발/종료 통화는 사용자 확인 완료, 3스테이지 전투 난이도는 추가 플레이 확인 필요). 다음은 M8(폴리시·연출·사운드)
+마지막 갱신: 2026-09-22 · 현재 단계: **M0~M7 완료(사용자 확인), M8 진행 중**(일시정지/타이틀/피격 이펙트 구현, 사용자 플레이 확인 전). M4 상세: (뚱보, 폭발 오브젝트, 3스테이지, 복선 소품. 뚱보/폭발/종료 통화는 사용자 확인 완료, 3스테이지 전투 난이도는 추가 플레이 확인 필요)
 
 ## 마일스톤 현황
 
@@ -14,7 +14,8 @@
 | M5 4스테이지 (4-1 사무실 + 4-2 배양실) | 완료 (사용자 플레이로 "정상 구현" 확인, 재시작 연출/슬로우 종료 방식 수정 반영. 커밋 ff82bef·4a8d9af·b87b485·184fbec) |
 | M6 5스테이지 보스전       | 완료 (사용자 플레이로 "정상 구현" 확인, 난이도 완화용 임시 권총은 확인 후 제거. 커밋 d0b7a95) |
 | M7 6스테이지 + 엔딩       | 완료 (사용자 플레이로 "정상 구현" 확인, 자폭 버튼을 누르면 모든 적이 그 자리에서 정지하도록 추가 반영) |
-| M8 ~ M9                  | 미착수  |
+| M8 폴리시·연출·사운드     | 진행 중 (일시정지 메뉴·타이틀 화면·피격 화면흔들림/플래시 구현, 사용자 플레이 확인 전. 사운드/문구 변주는 다음 단계) |
+| M9                        | 미착수  |
 
 ## M0 결과 (완료 기준 충족: 빈 씬에서 플레이어(원)가 카메라 안에 표시됨)
 
@@ -42,6 +43,21 @@ Game 뷰 캡처로 확인. 컴파일 에러 없음. 플레이어 지름이 화�
   - Projectile: Wall, Destructible, Enemy, Player
   - Pickup, SightBlocker: 충돌 없음(오버랩/레이캐스트 전용)
   - 커스텀 레이어와 Default 레이어 간 충돌도 끔
+
+## M8 결과 (진행 중: 일시정지/타이틀/피격 이펙트. 사용자 플레이 확인 전)
+
+개발계획 M8 절(폴리시·연출·사운드) 중 오디오 에셋이 필요 없는 항목부터 구현. 앰비언트 사운드, 안내방송, 문구 변주는 다음 단계로 남김.
+
+- **`Core/GameInput.cs`**: `TogglePause`(Esc) 액션 추가
+- **`Core/CameraShake.cs`**: `CinemachineImpulseSource`를 감싸는 얇은 래퍼. `Shake(force)`가 `GenerateImpulse` 호출
+- **`Player/PlayerHealth.cs`**: 피격 즉시 `CameraShake.Shake()` + 화면 전체에 짧게(0.25초, `Time.unscaledDeltaTime` 기준) 붉은 플래시(OnGUI)를 겹친다. 즉사 게임이라 연출이 사망 순간 한 번뿐이라는 점을 고려해 간단하게 구성
+- **`UI/PauseMenu.cs`**: Esc로 토글, `Time.timeScale`을 0/1로 전환. OnGUI 버튼 3개(계속하기/다시 시작(R)/타이틀로). "다시 시작"은 `RestartController.Restart()`를 그대로 호출, "타이틀로"는 `SnapshotSystem.ResetForNewGame()` 후 `Title` 씬 로드
+- **`UI/TitleScreen.cs`**: 제목 + 시작/종료 버튼(OnGUI). 시작 시 `SnapshotSystem.ResetForNewGame()` 후 `Stage1` 로드(이전 플레이의 스냅샷/소지품이 새 게임에 새지 않도록)
+- **`Core/SnapshotSystem.cs`**: `ResetForNewGame()` 공개 메서드 추가(기존 `ResetStatics`와 같은 내용을 공유하는 `ResetAll()`로 리팩터)
+- **배선 지점**: `CameraShake`/`CinemachineImpulseSource`/`PauseMenu`는 `M2Setup.CreateRig()`(모든 스테이지·샌드박스가 공유하는 플레이어 리그 생성 함수) 한 곳에만 추가해, 이후 `Stage 1-6 Setup` 재실행만으로 전 스테이지에 반영됨. `Editor/M8Setup.cs`는 `Title` 씬 하나만 담당
+- 스모크 테스트(에디터 프레임 스텝, `eval_file`): `Player`에 `CameraShake`+`CinemachineImpulseSource`, `CM Player Follow`에 `CinemachineImpulseListener` 부착 확인 → `PauseMenu.SetPaused(true/false)` 호출 시 `Time.timeScale`이 0/1로 정확히 전환 확인(Esc 키 자체는 `EditorApplication.Step` 프레임 경계에서 InputSystem 이벤트가 결정적이지 않아 내부 메서드 직접 호출로 검증, 바인딩 자체는 Restart/Interact와 동일 패턴이라 별도 확인 안 함) → `PlayerHealth.TakeHit` 호출 직후 `_flashT`가 설정 값(0.25)으로 올라감 확인 → `Title` 씬 로드 후 `TitleScreen` 컴포넌트 존재 확인
+- **함정 (M8)**: `capture_game_view`는 카메라가 렌더한 픽셀만 캡처하고 OnGUI 오버레이(일시정지 박스/버튼, 타이틀 문구)는 찍히지 않는다(게임 뷰 합성 단계가 아니라 카메라 렌더 소스 캡처라서). OnGUI 레이아웃 확인은 사용자 플레이로만 가능
+- 미확인/제한: 일시정지/타이틀 버튼 배치·글자 크기는 임시 OnGUI(정식 UI 전). 화면 흔들림 세기(`CameraShake.Shake()` 기본 force=1)와 피격 플래시 색/지속시간(0.25초)은 임시값. 앰비언트 사운드, "상황은 통제하에 있음" 문구 변주, 적 실루엣 가독성 점검, 통화/터미널 UI는 M8 남은 범위
 
 ## M7 결과 (완료: 6스테이지 + 엔딩. 사용자가 플레이로 "정상 구현" 확인)
 
@@ -253,16 +269,18 @@ WASD 이동, 마우스 조준, 좌클릭으로 더미 처치, 벽 뒤 더미는 
 
 ## 다음 세션 시작 가이드
 
-- 현재 브랜치 main. M0~M6 커밋·푸시 완료(마지막 푸시 `d490197`). M7은 로컬 커밋 1개(`2d57c49`)이고 사용자가 "정상 구현"으로 확인함(자폭 버튼 시 적 전원 정지 포함). 아직 푸시 전
-- 시작 시 할 일: M8(폴리시·연출·사운드) 착수. 개발계획 M8 절을 읽는다
-- 씬: 스테이지 `Stage1`~`Stage3`, `Stage4_1`, `Stage4_2`, `Stage5`, `Stage6`(실제 게임 흐름, 6스테이지가 마지막)와 샌드박스 M0~M4. 빌드 목록은 Stage1~Stage3, Stage4_1, Stage4_2, Stage5, Stage6, M4, M3, M2, M1, M0 순. 기능 확인은 `M4_Sandbox`(뚱보/폭발 오브젝트), `M3_Sandbox`(적 종류+소리+길찾기), `M2_Sandbox`(무기 5종)
+- 현재 브랜치 main. M0~M7 커밋·푸시 완료(마지막 푸시 `e437d8f`). M8(일시정지/타이틀/피격 이펙트)은 구현·스모크 테스트까지 끝났으나 아직 미커밋 + 사용자 플레이 확인 전
+- 시작 시 할 일: 사용자가 Title→Stage1→ESC 일시정지 흐름을 플레이로 확인한 뒤 커밋. 이어서 M8 남은 범위(사운드, 문구 변주, 가독성 점검) 착수
+- 씬: `Title`(타이틀) → 스테이지 `Stage1`~`Stage3`, `Stage4_1`, `Stage4_2`, `Stage5`, `Stage6`(실제 게임 흐름, 6스테이지가 마지막)와 샌드박스 M0~M4. 빌드 목록은 Title, Stage1~Stage3, Stage4_1, Stage4_2, Stage5, Stage6, M4, M3, M2, M1, M0 순. 기능 확인은 `M4_Sandbox`(뚱보/폭발 오브젝트), `M3_Sandbox`(적 종류+소리+길찾기), `M2_Sandbox`(무기 5종)
 - 개발 방침(개발계획 M9 절): M8까지는 핵심 메카닉과 스켈레톤 구현이 목적이고, 실제 맵 디자인·밸런싱은 M9에서 수행한다. 맵 배치/수치는 M9의 반복 수정을 염두에 두고 `StageSetup`/SO로 쉽게 바꿀 수 있게 설계한다
 - 새 적 종류는 `M3Setup`의 `InitEnemy`/`EnsureEnemyPrefab` 패턴(EnemyData SO + 프리팹)을 따르고, 스테이지 배치는 `StageSetup`에 추가
-- 씬/에셋 구성은 `Editor/`의 메뉴 스크립트(`M0~M4/M6/M7 Setup`, `Stage 1-6 Setup`)가 재생성하므로, M8도 같은 방식으로 만들어 씬 YAML을 직접 편집하지 않는다(에디터에서 직접 고친 씬은 재실행 시 사라짐). 플레이어 리그와 무기 에셋은 `M2Setup`, 적 에셋은 `M3Setup`, 뚱보/폭발 오브젝트는 `M4Setup`, 보스는 `M6Setup`, 6스테이지 전용 적은 `M7Setup`이 담당하고 `StageSetup`이 이를 호출한다
+- 씬/에셋 구성은 `Editor/`의 메뉴 스크립트(`M0~M4/M6~M8 Setup`, `Stage 1-6 Setup`)가 재생성하므로, 씬 YAML을 직접 편집하지 않는다(에디터에서 직접 고친 씬은 재실행 시 사라짐). 플레이어 리그와 무기 에셋은 `M2Setup`(일시정지/화면 흔들림 배선도 `CreateRig`에 포함), 적 에셋은 `M3Setup`, 뚱보/폭발 오브젝트는 `M4Setup`, 보스는 `M6Setup`, 6스테이지 전용 적은 `M7Setup`, 타이틀 씬은 `M8Setup`이 담당하고 `StageSetup`이 이를 호출한다
 - **에디터 테스트 함정(M7에서 확인)**: `unity command editor_play` 다음에는 곧바로 `editor_pause`를 호출해야 한다. `eval_file` 코드 안에서 `EditorApplication.isPaused = true`만 걸면, play 진입과 eval 호출 사이(도구 왕복 시간)만큼 이미 실시간으로 시뮬레이션이 진행된 뒤라 결정적이지 않다
 
 ## 다음 단계
 
+- M8 사용자 플레이 확인 필요: Title→Stage1 진입, 플레이 중 Esc로 일시정지(계속하기/다시 시작/타이틀로 버튼), 피격 시 화면 흔들림·붉은 플래시가 거슬리지 않는지
+- M8 남은 범위: 앰비언트 사운드, "상황은 통제하에 있음" 문구 변주(2스테이지 통화·4-1 송신문), 적 실루엣/폭발 표식 가독성 점검, 통화/터미널 UI 폴리시
 - M7 사용자 플레이 확인 후 조정: `FunnelSpawner`의 초기 대기(2.5초)·스폰 간격·상한(6), 깔때기 폭(`StageSetup.BuildStage6`의 halfHeights), 엔딩 페이드 연출(현재는 단색, 아트 전)
 - M6 상세 조정(사용자 확인은 끝났으나 세부 수치는 미조정 상태로 둠): 사격 예고 0.8초/쿨다운 1.5초, 제어 패널 엄폐, 잡몹 호출 쿨다운 12초/구성, 방호복 손상 표시(수치는 `BossData`, 배치는 `StageSetup.BuildStage5`)
 - 3스테이지(무기고 전투) 난이도/배치 사용자 플레이 확인 후 `StageSetup.BuildStage3` 조정. 통화 대사, 뚱보 몸 크기, 폭발 표시, 게시물 문구는 임시
@@ -272,6 +290,7 @@ WASD 이동, 마우스 조준, 좌클릭으로 더미 처치, 벽 뒤 더미는 
 ## 미해결 / 확인 필요
 
 - 개발계획 6절의 기획 빈칸 8건 모두 임시값으로 사용 중(가시창 부채꼴 120도, 투사체 속도 20/총알 40 지름/초, 주먹 폭 0.5, 적 투사체 속도 플레이어 2.5배, 이동속도 플레이어 5, 어그로 5초=경계 유지 시간, 보스 사격 쿨다운 1.5초, 자폭 버튼=스페이스). 6-6(뚱보 카운트다운 중 추격/공격 계속)은 사용자 확정, 나머지는 문서에 제안된 임시값을 그대로 채택(별도 확인 질문 없이 진행). 6-8(저장)은 M7 범위에서 제외(재시작만으로 충분, 필요 시 M9에서 검토)
-- M0~M6 커밋과 문서는 원격 푸시 완료(마지막 `d490197`). M7 커밋(`2d57c49`)은 로컬 완료, 푸시는 아직
+- M0~M7 커밋과 문서는 원격 푸시 완료(마지막 `e437d8f`). M8(일시정지/타이틀/피격 이펙트)은 미커밋
+- 화면 흔들림 세기·피격 플래시 색/지속시간(0.25초)은 임시값. 일시정지/타이틀 UI는 OnGUI(정식 UI 전)
 - `ProjectSettings/Packages/com.unity.learn.iet-framework/Settings.json`은 에디터가 자동 수정한 변경이라 커밋에서 제외
 - `.claude/`(세션 명령어·로컬 설정)와 `메모.txt`(사용자 메모)는 커밋 대상에서 제외

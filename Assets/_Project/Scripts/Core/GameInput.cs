@@ -16,6 +16,7 @@ namespace Game.Core
         public readonly InputAction Attack;
         public readonly InputAction Restart;
         public readonly InputAction Interact;
+        public readonly InputAction TogglePause;
 
         GameInput()
         {
@@ -30,12 +31,14 @@ namespace Game.Core
             Attack = new InputAction("Attack", InputActionType.Button, "<Mouse>/leftButton");
             Restart = new InputAction("Restart", InputActionType.Button, "<Keyboard>/r");
             Interact = new InputAction("Interact", InputActionType.Button, "<Keyboard>/space");
+            TogglePause = new InputAction("TogglePause", InputActionType.Button, "<Keyboard>/escape");
 
             Move.Enable();
             Point.Enable();
             Attack.Enable();
             Restart.Enable();
             Interact.Enable();
+            TogglePause.Enable();
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

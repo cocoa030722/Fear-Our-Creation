@@ -26,7 +26,12 @@ namespace Game.Core
         public static PlayerLoadout Snapshot => _snapshot;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics()
+        static void ResetStatics() => ResetAll();
+
+        /// <summary>타이틀에서 새 게임을 시작할 때 호출. 이전 플레이의 스냅샷/소지품/연출 시청 기록을 모두 비운다.</summary>
+        public static void ResetForNewGame() => ResetAll();
+
+        static void ResetAll()
         {
             _snapshot = null;
             IsRestart = false;

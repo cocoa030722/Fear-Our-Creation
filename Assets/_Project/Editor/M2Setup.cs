@@ -1,6 +1,7 @@
 using Game.Core;
 using Game.Enemies;
 using Game.Player;
+using Game.UI;
 using Game.Weapons;
 using Unity.Cinemachine;
 using UnityEditor;
@@ -215,6 +216,7 @@ namespace Game.Editor
 
             // 재시작/스냅샷 컨트롤러
             new GameObject("RestartController").AddComponent<RestartController>();
+            new GameObject("PauseMenu").AddComponent<PauseMenu>();
 
             // 플레이어
             var player = M1Setup.CreateSprite("Player", circle, unlit, PlaceholderPalette.Player, Vector2.zero, Vector2.one * GameConstants.PlayerDiameter, Layers.Player);
@@ -240,11 +242,14 @@ namespace Game.Editor
             rangeRenderer.enabled = false;
 
             var health = player.AddComponent<PlayerHealth>();
+            player.AddComponent<CinemachineImpulseSource>();
+            var shake = player.AddComponent<CameraShake>();
             var melee = player.AddComponent<MeleeAttack>();
             var ranged = player.AddComponent<RangedAttack>();
             var holder = player.AddComponent<WeaponHolder>();
             var controller = player.AddComponent<PlayerController>();
             M1Setup.SetField(health, "body", player.GetComponent<SpriteRenderer>());
+            M1Setup.SetField(health, "shake", shake);
             M1Setup.SetField(melee, "rangeIndicator", rangeRenderer);
             M1Setup.SetField(holder, "catalog", catalog);
             M1Setup.SetField(holder, "fist", fistData);
@@ -275,6 +280,7 @@ namespace Game.Editor
             vcam.Lens = lens;
             var composer = vcamGo.AddComponent<CinemachinePositionComposer>();
             composer.Damping = Vector3.zero;
+            vcamGo.AddComponent<CinemachineImpulseListener>();
 
             return player;
         }
@@ -296,7 +302,7 @@ namespace Game.Editor
         internal static void SetBuildScenes()
         {
             var list = new System.Collections.Generic.List<EditorBuildSettingsScene>();
-            foreach (var file in new[] { "Stage1", "Stage2", "Stage3", "Stage4_1", "Stage4_2", "Stage5", "Stage6", "M4_Sandbox", "M3_Sandbox", "M2_Sandbox", "M1_Sandbox", "M0_Sandbox" })
+            foreach (var file in new[] { "Title", "Stage1", "Stage2", "Stage3", "Stage4_1", "Stage4_2", "Stage5", "Stage6", "M4_Sandbox", "M3_Sandbox", "M2_Sandbox", "M1_Sandbox", "M0_Sandbox" })
             {
                 string path = $"{Root}/Scenes/{file}.unity";
                 if (System.IO.File.Exists(path)) list.Add(new EditorBuildSettingsScene(path, true));
