@@ -46,6 +46,10 @@ namespace Game.Enemies
         public float projectileSpeedMultiplier = 2.5f;
         [Tooltip("원거리: 이 거리(플레이어 지름의 배수) 이내로 다가오면 멈추고 발사한다. 기획에 수치 없음, 임시값")]
         public float engageDistanceInPlayerDiameters = 6f;
+        [Tooltip("원거리: 발동 딜레이 1회당 연속 발사 횟수(점사). 1이면 기존처럼 단발. 가시 투척병은 3(수정사항.md)")]
+        public int burstCount = 1;
+        [Tooltip("원거리: 점사 내 발사 간격(초). burstCount가 1보다 클 때만 사용")]
+        public float burstIntervalSeconds = 0.12f;
 
         [Header("뚱보 카운트다운")]
         [Tooltip("첫 피격 후 사망까지의 시간(초). 0이면 일반 적(1회 즉사). 기획: 뚱보 2초")]

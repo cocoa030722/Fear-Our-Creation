@@ -8,7 +8,7 @@ namespace Game.UI
     public class TitleScreen : MonoBehaviour
     {
         [SerializeField] string titleText = "Fear Our Creation";
-        [SerializeField] string firstScene = "Stage1";
+        [SerializeField] string firstScene = "Stage1_1";
 
         void OnGUI()
         {
@@ -21,12 +21,22 @@ namespace Game.UI
             buttonStyle.focused.textColor = buttonStyle.normal.textColor;
             float w = 260f, h = 64f;
             float bx = (Screen.width - w) * 0.5f;
-            if (GUI.Button(new Rect(bx, Screen.height * 0.55f, w, h), "시작", buttonStyle))
+            float by = Screen.height * 0.55f;
+
+            bool hasSave = SaveSystem.HasSave();
+            if (hasSave && GUI.Button(new Rect(bx, by, w, h), "이어하기", buttonStyle))
+            {
+                Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.UiClick);
+                ContinueGame();
+            }
+            if (hasSave) by += 76f;
+            if (GUI.Button(new Rect(bx, by, w, h), hasSave ? "새로 시작" : "시작", buttonStyle))
             {
                 Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.UiClick);
                 StartGame();
             }
-            if (GUI.Button(new Rect(bx, Screen.height * 0.55f + 76f, w, h), "종료", buttonStyle))
+            by += 76f;
+            if (GUI.Button(new Rect(bx, by, w, h), "종료", buttonStyle))
             {
                 Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.UiClick);
                 Application.Quit();
@@ -37,6 +47,13 @@ namespace Game.UI
         {
             SnapshotSystem.ResetForNewGame();
             SceneManager.LoadScene(firstScene);
+        }
+
+        void ContinueGame()
+        {
+            if (!SaveSystem.TryLoad(out string sceneName)) { StartGame(); return; }
+            SnapshotSystem.PrepareContinue();
+            SceneManager.LoadScene(sceneName);
         }
     }
 }

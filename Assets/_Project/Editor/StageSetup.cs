@@ -10,26 +10,34 @@ using UnityEngine;
 namespace Game.Editor
 {
     /// <summary>
-    /// 스테이지 씬 구성(1~4스테이지)과 벽 계열 프리팹(벽/화분/제어 패널). 여러 번 실행해도 안전(씬은 매번 새로 만든다).
-    /// 벽 규칙은 Wall 레이어 하나로 통일되므로 화분·제어 패널도 프리팹의 겉모습만 다르다.
+    /// 스테이지 씬 구성과 벽 계열 프리팹(벽/기둥/제어 패널). 여러 번 실행해도 안전(씬은 매번 새로 만든다).
+    /// 벽 규칙은 Wall 레이어 하나로 통일되므로 기둥·제어 패널도 프리팹의 겉모습만 다르다.
     /// 레이아웃을 바꿀 때는 이 스크립트를 수정한다(에디터에서 직접 고친 씬은 재실행 시 사라짐).
     /// </summary>
+    /// <remarks>
+    /// 씬 이름 규칙(수정사항.md: "한 스테이지에 여러 맵이 있을 수 있도록 준비"): 스테이지 N의 k번째 맵은
+    /// "StageN_k"(예: Stage4_1, Stage4_2). 맵이 하나뿐이던 기존 스테이지도 이번에 이 규칙에 맞춰
+    /// StageN_1로 통일했다(Stage1→Stage1_1 등). 스테이지에 맵을 추가하려면: (1) 새 BuildStageN_k 함수를
+    /// 추가해 Run()에서 호출, (2) 이전 맵의 StageGoal.nextSceneName이 새 맵을 가리키게 Goal(...) 인자를 수정,
+    /// (3) M2Setup.SetBuildScenes()의 씬 목록 배열에 새 파일명을 추가한다. 맵마다 RestartController가 있어
+    /// R 재시작은 맵 단위로 동작하고, SaveSystem은 씬 이름 하나만 저장하므로 별도 손볼 곳이 없다.
+    /// </remarks>
     public static class StageSetup
     {
         const string Root = "Assets/_Project";
         const string PropDir = Root + "/Prefabs/Props";
         const string WallPrefabPath = PropDir + "/Wall.prefab";
-        const string PlanterPrefabPath = PropDir + "/Planter.prefab";
+        const string PillarPrefabPath = PropDir + "/Pillar.prefab";
         const string PanelPrefabPath = PropDir + "/ControlPanel.prefab";
-        internal const string Stage1Path = Root + "/Scenes/Stage1.unity";
-        internal const string Stage2Path = Root + "/Scenes/Stage2.unity";
-        internal const string Stage3Path = Root + "/Scenes/Stage3.unity";
+        internal const string Stage1Path = Root + "/Scenes/Stage1_1.unity";
+        internal const string Stage2Path = Root + "/Scenes/Stage2_1.unity";
+        internal const string Stage3Path = Root + "/Scenes/Stage3_1.unity";
         internal const string Stage4_1Path = Root + "/Scenes/Stage4_1.unity";
         internal const string Stage4_2Path = Root + "/Scenes/Stage4_2.unity";
-        internal const string Stage5Path = Root + "/Scenes/Stage5.unity";
-        internal const string Stage6Path = Root + "/Scenes/Stage6.unity";
+        internal const string Stage5Path = Root + "/Scenes/Stage5_1.unity";
+        internal const string Stage6Path = Root + "/Scenes/Stage6_1.unity";
 
-        static readonly Color PlanterColor = new Color32(0x3F, 0xBF, 0x9F, 0xFF);
+        static readonly Color PillarColor = new Color32(0x8A, 0x8F, 0x94, 0xFF); // 화분(청록)에서 기둥(콘크리트 회색)으로 변경(수정사항.md: 순수 설정 변경, 메카닉 동일)
         static readonly Color PanelColor = new Color32(0x0E, 0x7C, 0x7C, 0xFF);
         static readonly Color TextColor = new Color32(0x2B, 0x3A, 0x42, 0xFF);
 
@@ -60,7 +68,7 @@ namespace Game.Editor
             var unlit = AssetDatabase.LoadAssetAtPath<Material>(Root + "/Art/Materials/SpriteUnlit.mat");
 
             SaveProp(WallPrefabPath, "Wall", square, unlit, PlaceholderPalette.LabObject, false);
-            SaveProp(PlanterPrefabPath, "Planter", circle, unlit, PlanterColor, true);
+            SaveProp(PillarPrefabPath, "Pillar", circle, unlit, PillarColor, true);
             SaveProp(PanelPrefabPath, "ControlPanel", square, unlit, PanelColor, false);
         }
 
@@ -83,7 +91,7 @@ namespace Game.Editor
             player.transform.position = new Vector3(-13f, 0f, 0f); // 숙직실
 
             var wall = Load(WallPrefabPath);
-            var planter = Load(PlanterPrefabPath);
+            var pillar = Load(PillarPrefabPath);
             new GameObject("NavGrid").AddComponent<NavGrid>();
             Boundary(wall);
 
@@ -104,12 +112,12 @@ namespace Game.Editor
             Prop(wall, "Hall Wall Upper", new Vector2(6.25f, 5.5f), new Vector2(0.5f, 7f));
             Prop(wall, "Hall Wall Lower", new Vector2(6.25f, -5.5f), new Vector2(0.5f, 7f));
 
-            // 엄폐물(화분 = 벽): 벽 뒤에 숨으면 적 시야를 피한다
-            Prop(planter, "Planter 1", new Vector2(-1f, 3.2f), Vector2.one * 1.2f);
-            Prop(planter, "Planter 2", new Vector2(-1f, -3.2f), Vector2.one * 1.2f);
-            Prop(planter, "Planter 3", new Vector2(2.5f, 1.6f), Vector2.one * 1.2f);
-            Prop(planter, "Planter 4", new Vector2(2.5f, -1.6f), Vector2.one * 1.2f);
-            Prop(planter, "Planter 5", new Vector2(0f, 6.2f), Vector2.one * 1.2f);
+            // 엄폐물(기둥 = 벽): 벽 뒤에 숨으면 적 시야를 피한다
+            Prop(pillar, "Pillar 1", new Vector2(-1f, 3.2f), Vector2.one * 1.2f);
+            Prop(pillar, "Pillar 2", new Vector2(-1f, -3.2f), Vector2.one * 1.2f);
+            Prop(pillar, "Pillar 3", new Vector2(2.5f, 1.6f), Vector2.one * 1.2f);
+            Prop(pillar, "Pillar 4", new Vector2(2.5f, -1.6f), Vector2.one * 1.2f);
+            Prop(pillar, "Pillar 5", new Vector2(0f, 6.2f), Vector2.one * 1.2f);
 
             // 적: 가시 창병만. 튜토리얼 순서 = 혼자 있는 적의 뒤 → 주먹 처치 → 가시창 노획, 이후 엄폐하며 접근
             var grunt = Load(M3Setup.SpearGruntPrefabPath);
@@ -122,11 +130,11 @@ namespace Game.Editor
             BuildOpening(breakable, square, unlit);
 
             // 종점: 탕비실 전화기
-            Goal("Phone", new Vector2(13f, 0f), "Phone", "Stage 1 Clear", "Stage2", square, unlit);
+            Goal("Phone", new Vector2(13f, 0f), "Phone", "Stage 1 Clear", "Stage2_1", square, unlit);
 
             Hint(new Vector2(-13f, 0f), 4.5f, "WASD: 이동    마우스: 조준    R: 즉시 재시작");
             Hint(new Vector2(-4f, 0f), 4.5f, "좌클릭: 공격 — 적의 등 뒤에서 노려 보세요\n죽은 적이 떨어뜨린 무기 위에서 스페이스: 습득/교체");
-            Hint(new Vector2(0f, 0f), 3f, "화분과 벽 뒤에 숨으면 적의 시야를 피할 수 있습니다");
+            Hint(new Vector2(0f, 0f), 3f, "기둥과 벽 뒤에 숨으면 적의 시야를 피할 수 있습니다");
 
             EditorSceneManager.SaveScene(scene, Stage1Path);
         }
@@ -169,7 +177,7 @@ namespace Game.Editor
             player.transform.position = new Vector3(-13f, 0f, 0f); // 탕비실 전화기 앞
 
             var wall = Load(WallPrefabPath);
-            var planter = Load(PlanterPrefabPath);
+            var pillar = Load(PillarPrefabPath);
             new GameObject("NavGrid").AddComponent<NavGrid>();
             Boundary(wall);
 
@@ -198,24 +206,24 @@ namespace Game.Editor
             // 엄폐물: 투척병의 가시는 벽에 막힌다는 것을 배우게 하는 배치
             foreach (var (name, pos) in new (string, Vector2)[]
             {
-                ("Planter A", new Vector2(-6f, 3.5f)), ("Planter B", new Vector2(-6f, -3.5f)),
-                ("Planter C", new Vector2(-2f, 0f)), ("Planter D", new Vector2(2f, 3f)),
-                ("Planter E", new Vector2(2f, -3f)), ("Planter F", new Vector2(6.5f, 0f)),
-                ("Planter G", new Vector2(9f, 3.5f)), ("Planter H", new Vector2(9f, -3.5f)),
+                ("Pillar A", new Vector2(-6f, 3.5f)), ("Pillar B", new Vector2(-6f, -3.5f)),
+                ("Pillar C", new Vector2(-2f, 0f)), ("Pillar D", new Vector2(2f, 3f)),
+                ("Pillar E", new Vector2(2f, -3f)), ("Pillar F", new Vector2(6.5f, 0f)),
+                ("Pillar G", new Vector2(9f, 3.5f)), ("Pillar H", new Vector2(9f, -3.5f)),
             })
-                Prop(planter, name, pos, Vector2.one * 1.2f);
+                Prop(pillar, name, pos, Vector2.one * 1.2f);
 
             var grunt = Load(M3Setup.SpearGruntPrefabPath);
             var thrower = Load(M3Setup.ThrowerPrefabPath);
-            M3Setup.PlaceEnemy(thrower, "Thrower Front", new Vector2(4f, 0f), 90f);           // 화분 뒤로 접근
+            M3Setup.PlaceEnemy(thrower, "Thrower Front", new Vector2(4f, 0f), 90f);           // 기둥 뒤로 접근
             M3Setup.PlaceGrunt(grunt, "Grunt Patrol", new Vector2(-4f, 6.5f), 0f, new Vector2(-4f, 6.5f), new Vector2(-4f, -6.5f));
             M3Setup.PlaceEnemy(grunt, "Grunt Top", new Vector2(2f, 7f), 180f);
             M3Setup.PlaceEnemy(thrower, "Thrower Far", new Vector2(10f, -5f), 90f);
             M3Setup.PlaceEnemy(grunt, "Grunt Elevator Guard", new Vector2(12f, 2f), 90f);
 
-            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "엘리베이터가 고장났다 - 계단으로 내려간다", "Stage3", square, unlit);
+            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "엘리베이터가 고장났다 - 계단으로 내려간다", "Stage3_1", square, unlit);
 
-            Hint(new Vector2(-6f, 0f), 4.5f, "투척병의 가시는 벽과 화분에 막힙니다. 엄폐물 뒤로 붙어서 접근하세요");
+            Hint(new Vector2(-6f, 0f), 4.5f, "투척병의 가시는 벽과 기둥에 막힙니다. 엄폐물 뒤로 붙어서 접근하세요");
 
             // 복선 소품: 5~6스테이지의 비상 소각/지하터널 개연성을 위한 벽 게시물
             Notice(new Vector2(-4f, 8.55f), "[게시물] 비상 소각 시스템 점검 안내 - 실험체 유출 시 최하층을 포함한 시설 전체를 소각해 격리합니다. 직원은 지시에 따라 대피하십시오.", square, unlit);
@@ -233,7 +241,7 @@ namespace Game.Editor
             player.transform.position = new Vector3(-13f, 0f, 0f); // 계단 위
 
             var wall = Load(WallPrefabPath);
-            var planter = Load(PlanterPrefabPath);
+            var pillar = Load(PillarPrefabPath);
             new GameObject("NavGrid").AddComponent<NavGrid>();
             Boundary(wall);
 
@@ -253,14 +261,14 @@ namespace Game.Editor
                 step.GetComponent<SpriteRenderer>().sortingOrder = -2;
             }
 
-            // 복도: 엄폐 화분과 첫 전투(창병 순찰, 투척병, 뚱보 1명 = 카운트다운 학습)
+            // 복도: 엄폐 기둥과 첫 전투(창병 순찰, 투척병, 뚱보 1명 = 카운트다운 학습)
             foreach (var (name, pos) in new (string, Vector2)[]
             {
-                ("Planter A", new Vector2(-5f, 3.5f)), ("Planter B", new Vector2(-5f, -3.5f)),
-                ("Planter C", new Vector2(-2f, 0f)), ("Planter D", new Vector2(0.5f, 5f)),
-                ("Planter E", new Vector2(0.5f, -5f)),
+                ("Pillar A", new Vector2(-5f, 3.5f)), ("Pillar B", new Vector2(-5f, -3.5f)),
+                ("Pillar C", new Vector2(-2f, 0f)), ("Pillar D", new Vector2(0.5f, 5f)),
+                ("Pillar E", new Vector2(0.5f, -5f)),
             })
-                Prop(planter, name, pos, Vector2.one * 1.2f);
+                Prop(pillar, name, pos, Vector2.one * 1.2f);
 
             var grunt = Load(M3Setup.SpearGruntPrefabPath);
             var thrower = Load(M3Setup.ThrowerPrefabPath);
@@ -433,7 +441,7 @@ namespace Game.Editor
             player.transform.position = new Vector3(-13f, 0f, 0f); // 엘리베이터에서 내린 지점. 재시작 지점은 여기(4-1 연출 없음)
 
             var wall = Load(WallPrefabPath);
-            var planter = Load(PlanterPrefabPath);
+            var pillar = Load(PillarPrefabPath);
             new GameObject("NavGrid").AddComponent<NavGrid>();
             Boundary(wall);
 
@@ -466,13 +474,13 @@ namespace Game.Editor
             M4Setup.PlaceProp(washTank, "Wash Tank 2", new Vector2(6f, -2.3f));
             M4Setup.PlaceProp(washTank, "Wash Tank 3", new Vector2(11f, 2.3f));
 
-            // 엄폐물(화분 = 벽): 시작 구역과 복도 중간
+            // 엄폐물(기둥 = 벽): 시작 구역과 복도 중간
             foreach (var (name, pos) in new (string, Vector2)[]
             {
-                ("Planter A", new Vector2(-6f, 2.2f)), ("Planter B", new Vector2(-6f, -2.2f)),
-                ("Planter C", new Vector2(3.5f, -2.6f)), ("Planter D", new Vector2(8.5f, 2.6f)),
+                ("Pillar A", new Vector2(-6f, 2.2f)), ("Pillar B", new Vector2(-6f, -2.2f)),
+                ("Pillar C", new Vector2(3.5f, -2.6f)), ("Pillar D", new Vector2(8.5f, 2.6f)),
             })
-                Prop(planter, name, pos, Vector2.one * 1.2f);
+                Prop(pillar, name, pos, Vector2.one * 1.2f);
 
             // 경비병 시신 4곳(권총 탄창 보급): 진입 직후, 세척수 탱크 구역, 중앙 통로, 엘리베이터 앞
             Corpse("Guard Corpse Entry", new Vector2(-10.5f, 2.5f), pistol, circle, unlit);
@@ -513,7 +521,7 @@ namespace Game.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
 
             // 종점: 비상 엘리베이터로 보스전(5스테이지)으로. 재시작 지점은 4-2 시작 그대로(5스테이지는 별도 재시작 지점)
-            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "최하층으로 내려간다", "Stage5", square, unlit);
+            Goal("Elevator", new Vector2(14f, 0f), "Elevator", "최하층으로 내려간다", "Stage5_1", square, unlit);
 
             Hint(new Vector2(-12f, 0f), 4.5f, "배양실: 시신 곁의 권총 위에서 스페이스로 탄창을 얻습니다. 좌클릭을 누르면 연사됩니다");
             Hint(new Vector2(-1f, 0f), 4f, "척탄병(노란 점)은 폭탄알을 던집니다. 벽 뒤에 숨으면 폭발을 막을 수 있습니다");
@@ -604,7 +612,7 @@ namespace Game.Editor
             goalGo.GetComponent<SpriteRenderer>().sortingOrder = -1;
             var goal = goalGo.AddComponent<StageGoal>();
             var goalSo = new SerializedObject(goal);
-            goalSo.FindProperty("nextSceneName").stringValue = "Stage6";
+            goalSo.FindProperty("nextSceneName").stringValue = "Stage6_1";
             goalSo.FindProperty("message").stringValue = "비상 소각 구역으로 향한다";
             goalSo.FindProperty("manualTrigger").boolValue = true;
             goalSo.ApplyModifiedPropertiesWithoutUndo();
@@ -734,7 +742,7 @@ namespace Game.Editor
 
         static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
-        /// <summary>프리팹 인스턴스를 놓고 크기를 맞춘다(벽/화분/패널 공용).</summary>
+        /// <summary>프리팹 인스턴스를 놓고 크기를 맞춘다(벽/기둥/패널 공용).</summary>
         static GameObject Prop(GameObject prefab, string name, Vector2 pos, Vector2 size)
         {
             var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);

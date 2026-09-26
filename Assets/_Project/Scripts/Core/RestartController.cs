@@ -19,6 +19,10 @@ namespace Game.Core
                 PlayerLoadout.Current.Ammo = 0;
             }
             SnapshotSystem.Begin();
+
+            // 스테이지 맵에 진입할 때마다 디스크에 저장(이어하기용). 샌드박스(M0~M4)는 스토리 진행이 아니라 제외
+            string sceneName = SceneManager.GetActiveScene().name;
+            if (sceneName.StartsWith("Stage")) SaveSystem.Save(sceneName);
         }
 
         void Update()

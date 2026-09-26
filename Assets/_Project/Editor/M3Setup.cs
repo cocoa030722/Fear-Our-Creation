@@ -65,7 +65,9 @@ namespace Game.Editor
                 d.moveSpeedMultiplier = 1f;             // 기획에 없음, 임시
                 d.weapon = thorn;
                 d.attackWindupSeconds = 0.2f;           // 일반 적 발동 딜레이(임의값)
-                d.attackIntervalSeconds = 0.5f;         // 기획: 투척병 발사 간격 0.5초
+                d.burstCount = 3;                       // 수정사항.md: 가시 투척병 3점사
+                d.burstIntervalSeconds = 0.12f;          // 점사 내 발사 간격(임시값)
+                d.attackIntervalSeconds = 1.6f;          // 수정사항.md: 3점사 도입에 맞춰 발동 간 대기시간 증가(기존 0.5초 단발 → 1.6초, 임시값)
                 d.projectileSpeedMultiplier = 2.5f;     // 개발계획 6-1 임시값
                 d.engageDistanceInPlayerDiameters = 6f;
                 d.lootWeapon = thorn;                   // 기획: 투척 가시 노획(6개 묶음)

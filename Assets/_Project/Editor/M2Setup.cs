@@ -305,7 +305,7 @@ namespace Game.Editor
         internal static void SetBuildScenes()
         {
             var list = new System.Collections.Generic.List<EditorBuildSettingsScene>();
-            foreach (var file in new[] { "Title", "Stage1", "Stage2", "Stage3", "Stage4_1", "Stage4_2", "Stage5", "Stage6", "M4_Sandbox", "M3_Sandbox", "M2_Sandbox", "M1_Sandbox", "M0_Sandbox" })
+            foreach (var file in new[] { "Title", "Stage1_1", "Stage2_1", "Stage3_1", "Stage4_1", "Stage4_2", "Stage5_1", "Stage6_1", "M4_Sandbox", "M3_Sandbox", "M2_Sandbox", "M1_Sandbox", "M0_Sandbox" })
             {
                 string path = $"{Root}/Scenes/{file}.unity";
                 if (System.IO.File.Exists(path)) list.Add(new EditorBuildSettingsScene(path, true));

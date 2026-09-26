@@ -24,8 +24,12 @@ MonoBehaviour:
   alertSecondsAfterLostSight: 3
   weapon: {fileID: 11400000, guid: edfb32a8e967d4740bbe40bd84babc8f, type: 2}
   attackWindupSeconds: 0.2
-  attackIntervalSeconds: 0.5
+  attackIntervalSeconds: 1.6
   projectileSpeedMultiplier: 2.5
   engageDistanceInPlayerDiameters: 6
+  burstCount: 3
+  burstIntervalSeconds: 0.12
+  deathCountdownSeconds: 0
+  countdownReductionPerHit: 0.2
   lootWeapon: {fileID: 11400000, guid: edfb32a8e967d4740bbe40bd84babc8f, type: 2}
   lootAmmo: 0

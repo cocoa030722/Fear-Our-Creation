@@ -26,18 +26,21 @@ namespace Game.Core
         public static PlayerLoadout Snapshot => _snapshot;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => ResetAll();
+        static void ResetStatics() => ResetAll(clearLoadout: true);
 
         /// <summary>타이틀에서 새 게임을 시작할 때 호출. 이전 플레이의 스냅샷/소지품/연출 시청 기록을 모두 비운다.</summary>
-        public static void ResetForNewGame() => ResetAll();
+        public static void ResetForNewGame() => ResetAll(clearLoadout: true);
 
-        static void ResetAll()
+        /// <summary>타이틀에서 "이어하기"를 누를 때 호출. SaveSystem이 이미 채운 PlayerLoadout.Current는 남기고 나머지 상태만 정리한다.</summary>
+        public static void PrepareContinue() => ResetAll(clearLoadout: false);
+
+        static void ResetAll(bool clearLoadout)
         {
             _snapshot = null;
             IsRestart = false;
             LoadedByRestart = false;
             _seenCutscenes.Clear();
-            PlayerLoadout.Current = new PlayerLoadout();
+            if (clearLoadout) PlayerLoadout.Current = new PlayerLoadout();
         }
 
         /// <summary>맵 진입 시점에 한 번 호출. 재시작이면 저장된 상태를 복원하고, 아니면 현재 상태를 캡처한다.</summary>
