@@ -39,6 +39,7 @@ namespace Game.Player
         void Update()
         {
             if (_health.IsDead) return;
+            if (Time.timeScale == 0f) return; // 일시정지 중에는 마우스 이동으로 조준 방향이 바뀌지 않게 한다
 
             _moveInput = Vector2.ClampMagnitude(GameInput.Instance.Move.ReadValue<Vector2>(), 1f);
             Aim();

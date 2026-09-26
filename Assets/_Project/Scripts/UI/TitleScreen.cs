@@ -12,10 +12,13 @@ namespace Game.UI
 
         void OnGUI()
         {
-            // 배경이 흰색(PlaceholderPalette.Background)이라 흰 글자는 보이지 않는다. 어두운 색으로 대비를 준다
+            // 배경이 검정 계열(PlaceholderPalette.Background)이므로 밝은 색(Player)으로 대비를 준다
             GUI.Label(new Rect(0, Screen.height * 0.26f, Screen.width, 120f), titleText, OsFont.Style(72, PlaceholderPalette.Player));
 
-            var buttonStyle = new GUIStyle(GUI.skin.button) { font = OsFont.Get(), fontSize = 28, normal = { textColor = PlaceholderPalette.Player } };
+            var buttonStyle = new GUIStyle(GUI.skin.button) { font = OsFont.Get(), fontSize = 36, normal = { textColor = PlaceholderPalette.Player } };
+            buttonStyle.hover.textColor = buttonStyle.normal.textColor;
+            buttonStyle.active.textColor = buttonStyle.normal.textColor;
+            buttonStyle.focused.textColor = buttonStyle.normal.textColor;
             float w = 260f, h = 64f;
             float bx = (Screen.width - w) * 0.5f;
             if (GUI.Button(new Rect(bx, Screen.height * 0.55f, w, h), "시작", buttonStyle))

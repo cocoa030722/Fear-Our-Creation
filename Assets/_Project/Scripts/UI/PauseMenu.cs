@@ -33,25 +33,29 @@ namespace Game.UI
         {
             if (!_paused) return;
 
-            float w = 320f, h = 240f;
+            float w = 420f, h = 320f;
             var boxRect = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
             GUI.Box(boxRect, string.Empty);
-            GUI.Label(new Rect(boxRect.x, boxRect.y + 12f, w, 32f), "일시정지", OsFont.Style(22, Color.white));
+            GUI.Label(new Rect(boxRect.x, boxRect.y + 16f, w, 44f), "일시정지", OsFont.Style(28, PlaceholderPalette.Player));
 
-            var buttonStyle = new GUIStyle(GUI.skin.button) { font = OsFont.Get(), fontSize = 18 };
-            float bx = (Screen.width - 220f) * 0.5f;
-            if (GUI.Button(new Rect(bx, boxRect.y + 60f, 220f, 44f), "계속하기", buttonStyle))
+            var buttonStyle = new GUIStyle(GUI.skin.button) { font = OsFont.Get(), fontSize = 26, normal = { textColor = PlaceholderPalette.Player } };
+            buttonStyle.hover.textColor = buttonStyle.normal.textColor;
+            buttonStyle.active.textColor = buttonStyle.normal.textColor;
+            buttonStyle.focused.textColor = buttonStyle.normal.textColor;
+            float bw = 300f, bh = 56f;
+            float bx = (Screen.width - bw) * 0.5f;
+            if (GUI.Button(new Rect(bx, boxRect.y + 80f, bw, bh), "계속하기", buttonStyle))
             {
                 SetPaused(false);
                 Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.UiClick);
             }
-            if (GUI.Button(new Rect(bx, boxRect.y + 112f, 220f, 44f), "다시 시작(R)", buttonStyle))
+            if (GUI.Button(new Rect(bx, boxRect.y + 148f, bw, bh), "다시 시작(R)", buttonStyle))
             {
                 SetPaused(false);
                 Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.UiClick);
                 RestartController.Restart();
             }
-            if (GUI.Button(new Rect(bx, boxRect.y + 164f, 220f, 44f), "타이틀로", buttonStyle))
+            if (GUI.Button(new Rect(bx, boxRect.y + 216f, bw, bh), "타이틀로", buttonStyle))
             {
                 SetPaused(false);
                 Game.Audio.SfxPlayer.Play(Game.Audio.Sfx.UiClick);
